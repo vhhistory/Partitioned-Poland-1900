@@ -130,6 +130,17 @@
             color: #2c3e50;
             padding: 4px 8px !important;
         }
+
+        /* In deinem CSS für Karten-Labels / Marker-Texte: */
+        .leaflet-tooltip, .map-label {
+            text-shadow: 
+                2px  2px 0px #fdfbf7,
+               -2px -2px 0px #fdfbf7,
+                2px -2px 0px #fdfbf7,
+               -2px  2px 0px #fdfbf7,
+                0px  2px 0px #fdfbf7,
+                0px -2px 0px #fdfbf7;
+        }
     </style>
 </head>
 <body>
@@ -156,7 +167,7 @@
     map.getPane('subbordersPane').style.zIndex = 350;
 
     map.createPane('railwaysPane');
-    map.getPane('railwaysPane').style.zIndex = 400;
+    map.getPane('railwaysPane').style.zIndex = 350;
 
     map.createPane('citiesPane');
     map.getPane('citiesPane').style.zIndex = 450;
@@ -203,7 +214,7 @@
         const regionData = [
             { name: "Provinz Posen", coords: [52.08, 16.8], className: 'region-label-auto' },
             { name: "Provinz Schlesien", coords: [50.78, 17.06], className: 'region-label-auto' },
-            { name: "Königreich Galizien und Lodomerien", coords: [49.35, 23.0], className: 'region-label-auto' },
+            { name: "Königreich Galizien und Lodomerien", coords: [49.25, 23.2], className: 'region-label-auto' },
             { name: "Königreich Polen", coords: [52.51, 21.20], className: 'region-label-poland' }
         ];
 
@@ -235,34 +246,34 @@ Promise.all([
         .then(([europeData, germanyData, austriaData, russiaData, boehmenData, maehrenData, schlesienData, ungarnData, adminData, railwayData]) => {
             
 // Eisenbahn-Linien dezenter rendern
-            if (railwayData) {
-                // 1. Zarter Halo (passt sich dem Papier-Hintergrund an)
-                const railwayHaloLayer = L.geoJSON(railwayData, {
-                    pane: 'railwaysPane',
-                    style: {
-                        color: '#f4f1ea',
-                        weight: 2.2,
-                        opacity: 0.8,
-                        lineCap: 'round',
-                        lineJoin: 'round'
-                    }
-                });
+if (railwayData) {
+    // 1. Breiterer Halo (erzeugt Freiraum um die Schiene)
+    const railwayHaloLayer = L.geoJSON(railwayData, {
+        pane: 'railwaysPane',
+        style: {
+            color: '#fdfbf7',   // Passt sich deiner Papierfarbe an
+            weight: 5.5,        // Deutlich breiter als die Linie selbst!
+            opacity: 0.85,
+            lineCap: 'round',
+            lineJoin: 'round'
+        }
+    });
 
-                // 2. Filigrane Hauptlinie in Anthrazit statt Tiefschwarz
-                const railwayLineLayer = L.geoJSON(railwayData, {
-                    pane: 'railwaysPane',
-                    style: {
-                        color: '#3a4a58',
-                        weight: 1.0,
-                        opacity: 0.7,
-                        dashArray: '3, 3',
-                        lineCap: 'square'
-                    }
-                });
+    // 2. Präsentere, breitere Hauptlinie
+    const railwayLineLayer = L.geoJSON(railwayData, {
+        pane: 'railwaysPane',
+        style: {
+            color: '#2b3a4a',   // Kräftiges Dunkelblau/Schiefer statt Rein-Schwarz
+            weight: 2.2,        // Verdoppelte Breite für Präsenz
+            opacity: 0.9,
+            dashArray: '6, 4',  // Längere Striche wirken ruhiger als kurze
+            lineCap: 'butt'
+        }
+    });
 
-                railwayLayerGroup.addLayer(railwayHaloLayer);
-                railwayLayerGroup.addLayer(railwayLineLayer);
-            }
+    railwayLayerGroup.addLayer(railwayHaloLayer);
+    railwayLayerGroup.addLayer(railwayLineLayer);
+}
 
             // A. Europa-Karte laden (ohne die drei Imperien)
             if (europeData) {
