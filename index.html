@@ -38,34 +38,49 @@
             white-space: nowrap;
         }
 
-        /* Fokusstädte (Posen, Warschau, Lemberg) */
+        /* Hervorgehobene Fokusstädte */
         .city-label-special {
-            background: #ffffff;
-            border: 1.5px solid #8e44ad;
-            border-radius: 3px;
-            padding: 2px 7px;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-weight: 700;
             font-size: 12px;
-            font-weight: bold;
-            color: #8e44ad;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            white-space: nowrap;
+            color: #111111;
+            text-shadow: 1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff;
         }
 
         /* Imperien Beschriftung */
-        .empire-label {
-            background: transparent;
-            border: none;
-            box-shadow: none;
-            font-family: 'Georgia', serif;
-            font-size: 14px;
-            font-weight: bold;
-            font-style: italic;
-            color: #4a3b32;
-            letter-spacing: 1px;
-            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
-            pointer-events: none;
-            white-space: nowrap;
-        }
+        // 5. Imperien-Labels nahe am Dreiländereck (Kattowitz / Dreikaisereck)
+        const empires = [
+            { 
+                name: "Deutsches Kaiserreich", 
+                coords: [50.8, 17.5],  // Nordwestlich des Dreiländerecks (Schlesien)
+                anchor: [180, 10]       // Rechtsbündig ausgerichtet
+            },
+            { 
+                name: "Österreich-Ungarn", 
+                coords: [49.5, 19.5],  // Südlich des Dreiländerecks (Galizien)
+                anchor: [100, 0]        // Zentriert
+            },
+            { 
+                name: "Russländisches Reich", 
+                coords: [51.2, 21.8],  // Nordöstlich des Dreiländerecks (Kongresspolen)
+                anchor: [20, 10]        // Linksbündig ausgerichtet
+            }
+        ];
+        
+        empires.forEach(emp => {
+            L.marker(emp.coords, {
+                pane: 'specialCitiesPane',
+                icon: L.divIcon({
+                    className: 'empire-label',
+                    html: emp.name,
+                    iconSize: [200, 20],
+                    iconAnchor: emp.anchor
+                }),
+                interactive: false
+            }).addTo(map);
+        });
     </style>
 </head>
 <body>
@@ -135,51 +150,62 @@
     });
 
     // 6. Städte rendern
-    const specialCities = ["Posen", "Warschau", "Lemberg"];
+   // 1. Einheitliche Farbe für alle Orte
+const markerColor = "#2c3e50";
 
-    function addCityToMap(name, lat, lng) {
-        const isSpecial = specialCities.includes(name);
+// 2. Stern-Icon für Posen, Warschau & Lemberg in der exakt gleichen Farbe
+const starIcon = L.divIcon({
+    pane: 'specialCitiesPane',
+    html: `<svg height="18" width="18" viewBox="0 0 24 24" style="display: block;">
+             <polygon points="12,2 15,9 22,9 16,14 18,21 12,17 6,21 8,14 2,9 9,9" 
+                      fill="${markerColor}" stroke="#ffffff" stroke-width="1.5"/>
+           </svg>`,
+    className: '',
+    iconSize: [18, 18],
+    iconAnchor: [9, 9]
+});
 
-        if (isSpecial) {
-            // Hervorgehobene Städte auf 'specialCitiesPane' (Z-Index 500)
-            const marker = L.circleMarker([lat, lng], {
-                pane: 'specialCitiesPane',
-                radius: 6,
-                fillColor: "#8e44ad",
-                color: "#ffffff",
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 1
-            });
+// 3. Funktion zum Hinzufügen der Städte
+const specialCities = ["Posen", "Warschau", "Lemberg"];
 
-            marker.bindTooltip(name, {
-                permanent: true,
-                direction: 'right',
-                offset: [8, 0],
-                className: 'city-label-special'
-            });
-            marker.addTo(map);
-        } else {
-            // Normale Städte auf 'citiesPane' (Z-Index 450)
-            const marker = L.circleMarker([lat, lng], {
-                pane: 'citiesPane',
-                radius: 4,
-                fillColor: "#2c3e50",
-                color: "#ffffff",
-                weight: 1,
-                opacity: 1,
-                fillOpacity: 0.9
-            });
+function addCityToMap(name, lat, lng) {
+    const isSpecial = specialCities.includes(name);
 
-            marker.bindTooltip(name, {
-                permanent: true,
-                direction: 'right',
-                offset: [6, 0],
-                className: 'city-label'
-            });
-            marker.addTo(map);
-        }
+    if (isSpecial) {
+        // Fokusstadt als Stern
+        const marker = L.marker([lat, lng], { 
+            icon: starIcon,
+            zIndexOffset: 1000 
+        });
+
+        marker.bindTooltip(name, {
+            permanent: true,
+            direction: 'right',
+            offset: [10, 0],
+            className: 'city-label-special'
+        });
+        marker.addTo(map);
+    } else {
+        // Normale Stadt als Kreis in derselben Farbe
+        const marker = L.circleMarker([lat, lng], {
+            pane: 'citiesPane',
+            radius: 3.5,
+            fillColor: markerColor,
+            color: "#ffffff",
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.9
+        });
+
+        marker.bindTooltip(name, {
+            permanent: true,
+            direction: 'right',
+            offset: [6, 0],
+            className: 'city-label'
+        });
+        marker.addTo(map);
     }
+}
 
     // 7. Robustes Laden von 'cities-geo' (GeoJSON & CSV Kompatibel)
     fetch('cities-geo')
