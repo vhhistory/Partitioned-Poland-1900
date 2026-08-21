@@ -237,6 +237,8 @@
 
 document.addEventListener('DOMContentLoaded', function() {
 
+    document.addEventListener('DOMContentLoaded', function() {
+
     // 5. Imperien & Provinzen laden
     const fetchGermany   = fetch('Deutsches-Kaiserreich_1914.json').then(r => r.json());
     const fetchAustria   = fetch('Oesterreich-1908.json').then(r => r.json());
@@ -285,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 1. Böhmen, Mähren, Schlesien und Ungarn wie andere Provinzen anzeigen
         L.geoJSON(boehmenData,   { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
         L.geoJSON(maehrenData,   { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
-        L.geoJSON(schlesienData, { pane: 'empiresPane', style: provinceStyle -> standardProvinceStyle }).addTo(map);
+        L.geoJSON(schlesienData, { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
         L.geoJSON(ungarnData,    { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
 
         // --- Hauptkarte Europa 1900 (Provinzen anzeigen, Gouvernement-Labels filtern) ---
