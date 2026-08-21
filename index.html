@@ -271,26 +271,31 @@
             L.geoJSON(schlesienData, { pane: 'subbordersPane', style: subBorderStyle }).addTo(map);
             L.geoJSON(ungarnData,    { pane: 'subbordersPane', style: subBorderStyle }).addTo(map);
 
-            // D. Admin-Ebenen / Gouvernements
+           // Admin-Ebenen / Gouvernements (mit robusterem Ausschluss für die manuell gesetzten Labels)
             L.geoJSON(adminData, {
                 pane: 'subbordersPane',
                 style: subBorderStyle,
                 onEachFeature: function(feature, layer) {
                     const name = getLatinName(feature.properties);
+                    const nameLower = name.toLowerCase();
                     const rawProps = JSON.stringify(feature.properties || {}).toLowerCase();
                     
+                    // Polnische Gouvernements filtern
                     const isPolishGov = rawProps.includes("suwalki") || rawProps.includes("warschau") || 
                                         rawProps.includes("kalisch") || rawProps.includes("kielce") || 
                                         rawProps.includes("lublin") || rawProps.includes("lomza") || 
                                         rawProps.includes("radom") || rawProps.includes("siedlce") || 
                                         rawProps.includes("piotrkow") || rawProps.includes("plock");
-                    // Auch Posen, Schlesien & Galizien aus der Automatikerzeugung ausschließen
-                    const isManualLabel = rawProps.includes("posen") || 
-                                          rawProps.includes("schlesien") || 
-                                          rawProps.includes("galizien") || 
-                                          rawProps.includes("galicia");
 
-                    if (!isPolishGov && name) {
+                    // Abgleich über alle gängigen Schreibweisen (DE, EN, PL, LA)
+                    const isManualLabel = nameLower.includes("posen") || nameLower.includes("pozna") ||
+                                          nameLower.includes("schlesien") || nameLower.includes("silesia") || nameLower.includes("śląsk") ||
+                                          nameLower.includes("galizien") || nameLower.includes("galicia") || nameLower.includes("galicja") ||
+                                          rawProps.includes("posen") || rawProps.includes("pozna") ||
+                                          rawProps.includes("schlesien") || rawProps.includes("silesia") ||
+                                          rawProps.includes("galizien") || rawProps.includes("galicia");
+
+                    if (!isPolishGov && !isManualLabel && name) {
                         if (layer.getBounds) {
                             const labelMarker = L.marker(layer.getBounds().getCenter(), {
                                 pane: 'specialCitiesPane',
