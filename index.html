@@ -326,17 +326,17 @@
                                     rawName.includes("siedlce") || rawName.includes("piotrkow");
 
                 if (isPolishGov) {
-                    // 1. Überschreibst den Objektnamen intern mit "Königreich Polen"
+                    // 1. Objektnamen intern mit "Königreich Polen" überschreiben
                     feature.properties.name = "Königreich Polen";
                     feature.properties.NAME = "Königreich Polen";
                     feature.properties.TITLE = "Königreich Polen";
 
-                    // 2. Entfernt alte Tooltips/Labels der einzelnen Gouvernements
+                    // 2. Alte Tooltips/Labels der einzelnen Gouvernements entfernen
                     if (layer.getTooltip()) {
                         layer.unbindTooltip();
                     }
 
-                    // 3. Vergibt einheitlich das neue Label "Königreich Polen"
+                    // 3. Einheitliches Label "Königreich Polen" vergeben
                     layer.bindTooltip("Königreich Polen", {
                         permanent: false,
                         direction: 'center',
@@ -364,7 +364,6 @@
 
     })
     .catch(err => console.error("Fehler beim Laden der Kartendaten:", err));
-
     // 6. Admin (Admin-1900-geojson.geojson)
     fetch('Admin-1900-geojson.geojson')
         .then(res => res.json())
