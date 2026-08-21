@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Europa um 1900 - mit Eisenbahn-Layer Control</title>
+    <title>Europa um 1900 - Dynamische Provinzbeschriftung</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -119,7 +119,7 @@
         wheelPxPerZoomLevel: 120
     }).setView([51.8, 19.5], 6);
 
-    // 2. Panes
+    // 2. Panes & Layer-Gruppen
     map.createPane('empiresPane');
     map.getPane('empiresPane').style.zIndex = 300;
 
@@ -135,8 +135,10 @@
     map.createPane('specialCitiesPane');
     map.getPane('specialCitiesPane').style.zIndex = 500;
 
-    // Layer-Gruppe für optionales Schalten vorbereiten
+    // Layer-Gruppe für Eisenbahnen und Provinz-Labels
     const railwayLayerGroup = L.layerGroup();
+    const provinceLabelsGroup = L.layerGroup().addTo(map);
+
     const overlayMaps = {
         "🚂 Eisenbahnnetz (1900)": railwayLayerGroup
     };
@@ -144,8 +146,21 @@
     // Layer-Control oben rechts hinzufügen
     const layerControl = L.control.layers(null, overlayMaps, { collapsed: false }).addTo(map);
 
-    // Standardmäßig aktivieren (kann durch Entfernen dieser Zeile deaktiviert gestartet werden)
-    railwayLayerGroup.addTo(map);
+    // Events zum Ein-/Ausblenden der Provinznamen basierend auf dem Eisenbahn-Layer
+    map.on('overlayadd', function(e) {
+        if (e.layer === railwayLayerGroup) {
+            map.removeLayer(provinceLabelsGroup);
+        }
+    });
+
+    map.on('overlayremove', function(e) {
+        if (e.layer === railwayLayerGroup) {
+            map.addLayer(provinceLabelsGroup);
+        }
+    });
+
+    // Eisenbahn-Layer standardmäßig NICHT aktivieren -> Provinz-Labels bleiben aktiv
+    // (railwayLayerGroup.addTo(map) wird hier weggelassen)
 
     // 3. Basemaps
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
@@ -207,7 +222,7 @@
         })
         .catch(err => console.error("Fehler bei europa_1900.geojson:", err));
 
-    // 6. Admin (Admin-1900-geojson.geojson) - Wolhynien & Podolien unsichtbar
+    // 6. Admin (Admin-1900-geojson.geojson)
     fetch('Admin-1900-geojson.geojson')
         .then(res => res.json())
         .then(data => {
@@ -237,7 +252,7 @@
                         layer.bindPopup("<b>" + name + "</b>");
 
                         if (layer.getBounds) {
-                            L.marker(layer.getBounds().getCenter(), {
+                            const labelMarker = L.marker(layer.getBounds().getCenter(), {
                                 pane: 'specialCitiesPane',
                                 icon: L.divIcon({
                                     className: 'region-label-auto',
@@ -246,14 +261,15 @@
                                     iconAnchor: [90, 10]
                                 }),
                                 interactive: false
-                            }).addTo(map);
+                            });
+                            provinceLabelsGroup.addLayer(labelMarker);
                         }
                     }
                 }
             }).addTo(map);
 
-            // Radom & Galizien manuell
-            L.marker([51.402, 21.147], {
+            // Radom & Galizien manuell zur Label-Gruppe hinzufügen
+            const radomMarker = L.marker([51.402, 21.147], {
                 pane: 'specialCitiesPane',
                 icon: L.divIcon({
                     className: 'region-label-auto',
@@ -262,9 +278,10 @@
                     iconAnchor: [90, 10]
                 }),
                 interactive: false
-            }).addTo(map);
+            });
+            provinceLabelsGroup.addLayer(radomMarker);
 
-            L.marker([49.95, 24.03], {
+            const galizienMarker = L.marker([49.95, 24.03], {
                 pane: 'specialCitiesPane',
                 icon: L.divIcon({
                     className: 'region-label-auto',
@@ -273,11 +290,12 @@
                     iconAnchor: [130, 20]
                 }),
                 interactive: false
-            }).addTo(map);
+            });
+            provinceLabelsGroup.addLayer(galizienMarker);
         })
         .catch(err => console.error("Fehler bei Admin-1900-geojson.geojson:", err));
 
-    // 6b. Eisenbahnlinien laden (Dezentes Design & optionales Layer)
+    // 6b. Eisenbahnlinien laden (In Rot)
     fetch('Eisenbahn-Linien.geojson')
         .then(res => {
             if (!res.ok) throw new Error("HTTP Fehler " + res.status);
@@ -299,10 +317,10 @@
                     return swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]);
                 },
                 style: {
-                    color: '#3a4754',   // Dezenteres Dunkelgrau-Blau
-                    weight: 1.2,         // Wesentlich dünner und eleganter
-                    opacity: 0.65,       // Transparenter, um nicht zu stören
-                    dashArray: '4, 3'   // Feines Gestrichelt-Muster
+                    color: '#aa2222',   // Eisenbahnen in Rot
+                    weight: 1.5,         // Schlanke Linienstärke
+                    opacity: 0.75,       // Gute Sichtbarkeit
+                    dashArray: '4, 3'   // Gestricheltes Muster
                 },
                 onEachFeature: function(feature, layer) {
                     if (feature.properties) {
@@ -317,7 +335,7 @@
         })
         .catch(err => console.error("Fehler beim Laden von Eisenbahn-Linien.geojson:", err));
 
-    // 7. Imperien-Labels
+    // 7. Imperien-Labels (Aktualisierte Koordinaten)
     const empires = [
         { name: "Deutsches Kaiserreich", coords: [51.7, 16.4] },
         { name: "Russländisches Reich", coords: [51.7, 21.8] },
