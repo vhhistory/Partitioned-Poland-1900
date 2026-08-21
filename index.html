@@ -234,33 +234,32 @@ Promise.all([
         // FIX 1: "railwayData" als 10. Argument hinzugefügt
         .then(([europeData, germanyData, austriaData, russiaData, boehmenData, maehrenData, schlesienData, ungarnData, adminData, railwayData]) => {
             
-            // FIX 2: Eisenbahn-Linien verarbeiten und zur LayerGroup hinzufügen
+// Eisenbahn-Linien dezenter rendern
             if (railwayData) {
-                // Weiße Unterlegung (Halo für Lesbarkeit)
+                // 1. Zarter Halo (passt sich dem Papier-Hintergrund an)
                 const railwayHaloLayer = L.geoJSON(railwayData, {
                     pane: 'railwaysPane',
                     style: {
-                        color: '#ffffff',
-                        weight: 3,
-                        opacity: 0.9,
+                        color: '#f4f1ea',
+                        weight: 2.2,
+                        opacity: 0.8,
                         lineCap: 'round',
                         lineJoin: 'round'
                     }
                 });
 
-                // Schwarze Hauptlinie (gestrichelt)
+                // 2. Filigrane Hauptlinie in Anthrazit statt Tiefschwarz
                 const railwayLineLayer = L.geoJSON(railwayData, {
                     pane: 'railwaysPane',
                     style: {
-                        color: '#000000',
-                        weight: 1.5,
-                        opacity: 1.0,
-                        dashArray: '4, 4',
+                        color: '#3a4a58',
+                        weight: 1.0,
+                        opacity: 0.7,
+                        dashArray: '3, 3',
                         lineCap: 'square'
                     }
                 });
 
-                // Verknüpfung mit der bestehenden Layer-Gruppe für die Menüsteuerung
                 railwayLayerGroup.addLayer(railwayHaloLayer);
                 railwayLayerGroup.addLayer(railwayLineLayer);
             }
