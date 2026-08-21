@@ -295,7 +295,7 @@
         })
         .catch(err => console.error("Fehler bei Admin-1900-geojson.geojson:", err));
 
-   // 6b. Eisenbahnlinien laden (Gleis-Optik: Schwarz-Weiß gestrichelt)
+   // 6b. Eisenbahnlinien laden (Gleis-Optik: Schwarz-Weiß gestrichelt mit Transparenz)
     fetch('Eisenbahn-Linien.geojson')
         .then(res => {
             if (!res.ok) throw new Error("HTTP Fehler " + res.status);
@@ -311,25 +311,25 @@
                 }
             } catch(e) {}
 
-            // 1. Untere Ebene: Dunkle Basislinie
+            // 1. Untere Ebene: Dunkle Basislinie (jetzt leicht transparent)
             const baseRailLayer = L.geoJSON(data, {
                 pane: 'railwaysPane',
                 coordsToLatLng: coords => swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]),
                 style: {
                     color: '#1a1a1a',
-                    weight: 2.5,
-                    opacity: 0.85
+                    weight: 2.2,
+                    opacity: 0.6  // Von 0.85 auf 0.6 reduziert
                 }
             });
 
-            // 2. Obere Ebene: Gestrichelte weiße Überlagerung ("Gleis-Effekt")
+            // 2. Obere Ebene: Gestrichelte weiße Überlagerung (ebenfalls leicht transparent)
             const dashRailLayer = L.geoJSON(data, {
                 pane: 'railwaysPane',
                 coordsToLatLng: coords => swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]),
                 style: {
                     color: '#ffffff',
-                    weight: 1.2,
-                    opacity: 0.95,
+                    weight: 1.0,
+                    opacity: 0.65, // Von 0.95 auf 0.65 reduziert
                     dashArray: '3, 4'
                 },
                 onEachFeature: function(feature, layer) {
