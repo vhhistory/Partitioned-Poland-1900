@@ -250,10 +250,10 @@
     const fetchEurope    = fetch('europa_1900.geojson').then(r => r.json());
 
     // Neue Provinzen laden
-    const fetchBoehmen  = fetch('Boehmen.json').then(r => r.json());
-    const fetchMaehren  = fetch('Maehren.json').then(r => r.json());
+    const fetchBoehmen   = fetch('Boehmen.json').then(r => r.json());
+    const fetchMaehren   = fetch('Maehren.json').then(r => r.json());
     const fetchSchlesien = fetch('Schlesien.json').then(r => r.json());
-    const fetchUngarn   = fetch('Ungarn.json').then(r => r.json());
+    const fetchUngarn    = fetch('Ungarn.json').then(r => r.json());
 
     Promise.all([
         fetchGermany, fetchAustria, fetchRussia, fetchEurope,
@@ -277,7 +277,7 @@
             style: { fill: true, fillColor: '#922b21', fillOpacity: 0.15, stroke: true, color: '#922b21', weight: 2.5, opacity: 0.85 }
         }).addTo(map);
 
-        // --- Neue Provinzen ---
+        // --- Provinzen (Österreich-Ungarn) ---
         const provinceStyle = {
             fill: true,
             fillColor: '#d4ac0d',
@@ -288,25 +288,25 @@
             opacity: 0.9
         };
 
-        L.geoJSON(boehmenData,  { pane: 'empiresPane', style: provinceStyle }).addTo(map);
-        L.geoJSON(maehrenData,  { pane: 'empiresPane', style: provinceStyle }).addTo(map);
-        L.geoJSON(schlesienData,{ pane: 'empiresPane', style: provinceStyle }).addTo(map);
-        L.geoJSON(ungarnData,   { pane: 'empiresPane', style: provinceStyle }).addTo(map);
+        L.geoJSON(boehmenData,   { pane: 'empiresPane', style: provinceStyle }).addTo(map);
+        L.geoJSON(maehrenData,   { pane: 'empiresPane', style: provinceStyle }).addTo(map);
+        L.geoJSON(schlesienData, { pane: 'empiresPane', style: provinceStyle }).addTo(map);
+        L.geoJSON(ungarnData,    { pane: 'empiresPane', style: provinceStyle }).addTo(map);
 
-        // --- Hauptkarte Europa 1900 (Unterdrückung + Suwalki Bereinigung) ---
+        // --- Hauptkarte Europa 1900 (Russische Provinzen -> Königreich Polen) ---
         L.geoJSON(europeData, {
             pane: 'empiresPane',
             filter: function(feature) {
                 const p = feature.properties || {};
                 const rawName = JSON.stringify(p).toLowerCase();
 
-                // Suwalki explizit ERLAUBEN (nicht unterdrücken)
+                // Suwalki & russisch-polnische Gouvernements explizit ZULASSEN
                 const isSuwalki = rawName.includes("suwalki") || rawName.includes("suwałki");
                 if (isSuwalki) {
                     return true;
                 }
 
-                // Prüfen, ob das Land/die Region unterdrückt werden soll
+                // Hauptreichsgrenzen von Deutschland, Österreich & Russland filtern
                 const isGermany = rawName.includes("german") || rawName.includes("deutsches") || rawName.includes("preußen") || rawName.includes("prussia");
                 const isAustria = rawName.includes("austr") || rawName.includes("österreich") || rawName.includes("hungary") || rawName.includes("ungarn");
                 const isRussia  = rawName.includes("russi") || rawName.includes("russisch");
@@ -314,8 +314,36 @@
                 return !isGermany && !isAustria && !isRussia;
             },
             onEachFeature: function(feature, layer) {
-                // Namensbereinigung: Entfernt Jahreszahlen (z.B. "Suwalki 1900" -> "Suwalki")
-                if (feature.properties) {
+                const p = feature.properties || {};
+                const rawName = JSON.stringify(p).toLowerCase();
+
+                // Prüfen, ob es sich um eine der verbliebenen russischen Provinzen / Gouvernements handelt
+                const isPolishGov = rawName.includes("suwalki") || rawName.includes("suwałki") || 
+                                    rawName.includes("gouvernement") || rawName.includes("gov") ||
+                                    rawName.includes("warschau") || rawName.includes("kalisch") ||
+                                    rawName.includes("kielce") || rawName.includes("lublin") ||
+                                    rawName.includes("lomza") || rawName.includes("radom") ||
+                                    rawName.includes("siedlce") || rawName.includes("piotrkow");
+
+                if (isPolishGov) {
+                    // 1. Überschreibst den Objektnamen intern mit "Königreich Polen"
+                    feature.properties.name = "Königreich Polen";
+                    feature.properties.NAME = "Königreich Polen";
+                    feature.properties.TITLE = "Königreich Polen";
+
+                    // 2. Entfernt alte Tooltips/Labels der einzelnen Gouvernements
+                    if (layer.getTooltip()) {
+                        layer.unbindTooltip();
+                    }
+
+                    // 3. Vergibt einheitlich das neue Label "Königreich Polen"
+                    layer.bindTooltip("Königreich Polen", {
+                        permanent: false,
+                        direction: 'center',
+                        className: 'region-label-poland'
+                    });
+                } else {
+                    // Normale Bereinigung von Jahreszahlen für andere Regionen
                     for (let key in feature.properties) {
                         if (typeof feature.properties[key] === 'string') {
                             feature.properties[key] = feature.properties[key].replace(/\b(18|19|20)\d{2}\b/g, '').trim();
@@ -329,7 +357,7 @@
                 fillOpacity: 0.15,
                 stroke: true,
                 color: '#34495e',
-                weight: 2.5,
+                weight: 1.5,
                 opacity: 0.85
             }
         }).addTo(map);
