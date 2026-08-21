@@ -355,6 +355,7 @@
             }
         }
 
+// 8. Städte laden und verarbeiten
         fetch('cities-geo')
             .then(res => res.text())
             .then(textData => {
@@ -364,13 +365,19 @@
                         L.geoJSON(geojson, {
                             onEachFeature: (f) => {
                                 if (f.geometry && f.geometry.coordinates) {
-                                    addCityToMap(f.properties.name || f.properties.NAME || "Stadt", f.geometry.coordinates[1], f.geometry.coordinates[0]);
+                                    addCityToMap(
+                                        f.properties.name || f.properties.NAME || "Stadt", 
+                                        f.geometry.coordinates[1], 
+                                        f.geometry.coordinates[0]
+                                    );
                                 }
                             }
                         });
                         return;
                     }
-                } catch (e) {}
+                } catch (e) {
+                    // Falls es kein GeoJSON ist, als CSV parsen
+                }
 
                 Papa.parse(textData, {
                     header: true,
@@ -391,7 +398,7 @@
             })
             .catch(err => console.error("Fehler beim Laden der Städte:", err));
 
-    });
+    }); // Schließt das document.addEventListener('DOMContentLoaded', function() { ...
 </script>
 
 </body>
