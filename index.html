@@ -57,10 +57,11 @@
             white-space: nowrap;
         }
 
-        /* Imperien-Labels */
+        /* Imperien-Labels (KURSIV) */
         .empire-label {
             font-size: 13px;
             font-weight: 700;
+            font-style: italic; /* Kursiver Textstil für Imperien */
             letter-spacing: 2.5px;
             text-transform: uppercase;
             text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.95), -1px -1px 3px rgba(255, 255, 255, 0.95);
@@ -120,16 +121,20 @@
     }).addTo(map);
 
 
-    // 4. Hilfsfunktion: Namensauflösung & Lateinisierung für russische Gebiete
+    // 4. Hilfsfunktion: Namensauflösung, Lateinisierung & Korrektur von "und"
     function getLatinName(properties) {
         if (!properties) return "";
         let name = properties["name:de"] || properties["name:en"] || properties["name:latin"] || properties.NAME || properties.name || "";
         
         if (/[\u0400-\u04FF]/.test(name)) {
-            if (properties["name:en"]) return properties["name:en"];
-            if (properties["name:de"]) return properties["name:de"];
-            name = name.replace(/Губерния|Guberniya/gi, "Gouvernement").trim();
+            if (properties["name:en"]) name = properties["name:en"];
+            else if (properties["name:de"]) name = properties["name:de"];
+            else name = name.replace(/Губерния|Guberniya/gi, "Gouvernement").trim();
         }
+
+        // Korrektur: "Und" zu kleingeschriebenem "und" umwandeln
+        name = name.replace(/\bUnd\b/g, 'und');
+
         return name;
     }
 
@@ -142,27 +147,26 @@
                 pane: 'empiresPane',
                 style: function(feature) {
                     const p = feature.properties || {};
-                    // Liest alle gängigen GeoJSON-Eigenschaften aus
                     const rawName = JSON.stringify(p).toLowerCase();
 
-                    let color = "#34495e"; // Dunkler Standard-Border
+                    let color = "#34495e";
 
                     if (rawName.includes("german") || rawName.includes("deutsches") || rawName.includes("preußen") || rawName.includes("prussia")) {
-                        color = "#1e2b37"; // Preußen / Deutsches Reich (Dunkles Blau-Grau)
+                        color = "#1e2b37"; 
                     } else if (rawName.includes("russi") || rawName.includes("russisch")) {
-                        color = "#922b21"; // Russisches Reich (Sattes Dunkelrot)
+                        color = "#922b21"; 
                     } else if (rawName.includes("austr") || rawName.includes("österreich") || rawName.includes("hungary") || rawName.includes("ungarn")) {
-                        color = "#b9770e"; // Österreich-Ungarn (Dunkles Ocker)
+                        color = "#b9770e"; 
                     }
 
                     return {
                         fill: true,
                         fillColor: color,
-                        fillOpacity: 0.15,   // Leichtes, klares Einfärben der Reichsflächen
-                        stroke: true,        // Macht die Staatsgrenze explizit sichtbar
-                        color: color,        // Linienfarbe der Imperiengrenze
-                        weight: 2.5,         // Deutlich sichtbare Grenzlinie
-                        opacity: 0.85        // Kaum Transparenz für die Außengrenzen
+                        fillOpacity: 0.15,
+                        stroke: true,
+                        color: color,
+                        weight: 2.5,
+                        opacity: 0.85
                     };
                 }
             }).addTo(map);
@@ -186,7 +190,8 @@
                 onEachFeature: function(feature, layer) {
                     const name = getLatinName(feature.properties);
                     
-                    if (name) {
+                    // Galizien nicht automatisch platzieren, sondern manuell oberhalb von Lemberg
+                    if (name && !name.toLowerCase().includes("galizien") && !name.toLowerCase().includes("galicia")) {
                         layer.bindPopup("<b>" + name + "</b>");
 
                         if (layer.getBounds) {
@@ -205,7 +210,7 @@
                 }
             }).addTo(map);
 
-            // Radom manuell ergänzen (falls in GeoJSON fehlend)
+            // Radom manuell ergänzen
             L.marker([51.402, 21.147], {
                 pane: 'specialCitiesPane',
                 icon: L.divIcon({
@@ -216,15 +221,27 @@
                 }),
                 interactive: false
             }).addTo(map);
+
+            // Königreich Galizien und Lodomerien exakt oberhalb von Lemberg platzieren
+            L.marker([49.95, 24.03], {
+                pane: 'specialCitiesPane',
+                icon: L.divIcon({
+                    className: 'region-label-auto',
+                    html: 'Königreich Galizien und Lodomerien',
+                    iconSize: [260, 20],
+                    iconAnchor: [130, 20]
+                }),
+                interactive: false
+            }).addTo(map);
         })
         .catch(err => console.error("Fehler beim Laden von Admin-1900-geojson.geojson:", err));
 
 
-    // 7. Imperien-Hauptbeschriftungen
+    // 7. Imperien-Hauptbeschriftungen (Kursiv per CSS, Österreich-Ungarn südlich von Krakau)
     const empires = [
         { name: "Deutsches Kaiserreich", coords: [51.7, 16.9] },
         { name: "Russländisches Reich", coords: [51.7, 21.8] },
-        { name: "Österreich-Ungarn", coords: [49.5, 19.9] }
+        { name: "Österreich-Ungarn", coords: [49.1, 19.9] } // Unterhalb von Krakau
     ];
 
     empires.forEach(emp => {
