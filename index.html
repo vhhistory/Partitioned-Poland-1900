@@ -311,16 +311,26 @@
                 }
             } catch(e) {}
 
-            const railLayer = L.geoJSON(data, {
+            // Untere Ebene: Durchgezogene dunkle Basislinie
+            const baseRailLayer = L.geoJSON(data, {
                 pane: 'railwaysPane',
-                coordsToLatLng: function (coords) {
-                    return swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]);
-                },
+                coordsToLatLng: coords => swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]),
                 style: {
-                    color: '#aa2222',   // Eisenbahnen in Rot
-                    weight: 1.5,         // Schlanke Linienstärke
-                    opacity: 0.75,       // Gute Sichtbarkeit
-                    dashArray: '4, 3'   // Gestricheltes Muster
+                    color: '#1a1a1a',
+                    weight: 2.5,
+                    opacity: 0.8
+                }
+            });
+
+            // Obere Ebene: Gestrichelte weiße Linie für den "Gleis-Effekt"
+            const dashRailLayer = L.geoJSON(data, {
+                pane: 'railwaysPane',
+                coordsToLatLng: coords => swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]),
+                style: {
+                    color: '#ffffff',
+                    weight: 1.2,
+                    opacity: 0.9,
+                    dashArray: '3, 4'
                 },
                 onEachFeature: function(feature, layer) {
                     if (feature.properties) {
@@ -329,6 +339,12 @@
                     }
                 }
             });
+
+            // Beide Ebenen zusammen in die Eisenbahn-Gruppe legen
+            railwayLayerGroup.addLayer(baseRailLayer);
+            railwayLayerGroup.addLayer(dashRailLayer);
+        })
+        .catch(err => console.error("Fehler beim Laden von Eisenbahn-Linien.geojson:", err));
 
             // Der steuerbaren Layer-Gruppe hinzufügen
             railwayLayerGroup.addLayer(railLayer);
