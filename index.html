@@ -10,7 +10,7 @@
     <!-- PapaParse für CSV-Import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     
-   <style>
+  <style>
     html, body {
         margin: 0;
         padding: 0;
@@ -44,7 +44,7 @@
     .city-label {
         font-weight: 500;
         font-size: 11px;
-        color: #333333;
+        color: #222222;
         text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.9), -1px -1px 2px rgba(255, 255, 255, 0.9);
         white-space: nowrap;
     }
@@ -52,39 +52,38 @@
     .city-label-special {
         font-weight: 700;
         font-size: 12px;
-        color: #111111;
+        color: #000000;
         letter-spacing: 0.2px;
         text-shadow: 1px 1px 3px #ffffff, -1px -1px 3px #ffffff;
         white-space: nowrap;
     }
 
-    /* Imperien-Beschriftungen (Dezenter & leicht transparent eingefärbt) */
+    /* Imperien-Labels (Ebenfalls dezent) */
     .empire-label {
         font-size: 13px;
         font-weight: 700;
-        letter-spacing: 2px;
+        letter-spacing: 2.5px;
         text-transform: uppercase;
         text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.9), -1px -1px 3px rgba(255, 255, 255, 0.9);
         pointer-events: none;
         white-space: nowrap;
     }
 
-    /* Spezifische dezente Tönungen für die Reiche */
-    .empire-german { color: rgba(44, 62, 80, 0.55); }      /* Preußen/Deutsches Reich: Blau-Grau */
-    .empire-russian { color: rgba(144, 44, 30, 0.55); }     /* Russisches Reich: Muted Rot */
-    .empire-austrian { color: rgba(180, 125, 20, 0.6); }    /* Österreich-Ungarn: Ochser-Gelb */
+    .empire-german { color: rgba(44, 62, 80, 0.7); }
+    .empire-russian { color: rgba(144, 44, 30, 0.7); }
+    .empire-austrian { color: rgba(180, 125, 20, 0.75); }
 
-    /* Regionen-Namen (Provinzen/Gouvernements: Sehr dezent) */
+    /* Provinzen & Gouvernements (Etwas prominenter über Opacity geregelt) */
     .region-label-auto {
-        font-size: 10px;
-        font-weight: 500;
-        color: rgba(60, 60, 60, 0.35);
+        font-size: 10.5px;
+        font-weight: 600;
+        color: rgba(40, 50, 60, 0.55); /* Leicht erhöhte Deckkraft */
         text-transform: capitalize;
-        letter-spacing: 0.2px;
+        letter-spacing: 0.3px;
         text-align: center;
         white-space: nowrap;
         pointer-events: none;
-        text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgba(255, 255, 255, 0.8);
+        text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.85), -1px -1px 2px rgba(255, 255, 255, 0.85);
     }
 </style>
 </head>
@@ -139,29 +138,83 @@ L.marker([51.402, 21.147], {
 
     // 4. Eigene GeoJSON-Grenzen (Optional – nur als dezent hervorgehobener Umriss)
     // GeoJSON aus GitHub laden & Radom ergänzen
+// 1. Laden der HISTORISCHEN IMPERIEN (europa_1900.geojson) als leichte Flächenfärbung
+fetch('europa_1900.geojson')
+    .then(response => response.json())
+    .then(data => {
+        L.geoJSON(data, {
+            pane: 'bordersPane',
+            style: function(feature) {
+                const name = (feature.properties && feature.properties.name) ? feature.properties.name.toLowerCase() : "";
+                
+                let empireColor = "#7f8c8d";
+
+                // Farbzuweisung je nach historischem Reich
+                if (name.includes("german") || name.includes("deutsches") || name.includes("preußen") || name.includes("prussia")) {
+                    empireColor = "#2c3e50"; // Preußen/Deutsches Reich (Blau-Grau)
+                } else if (name.includes("russian") || name.includes("russisch")) {
+                    empireColor = "#c0392b"; // Russisches Reich (Dezentes Rot)
+                } else if (name.includes("austr") || name.includes("österreich") || name.includes("hungary") || name.includes("ungarn")) {
+                    empireColor = "#f39c12"; // Österreich-Ungarn (Ocker-Gelb)
+                }
+
+                return {
+                    fill: true,
+                    fillColor: empireColor,
+                    fillOpacity: 0.08,    // Ganz leichte Flächenfärbung
+                    color: empireColor,     // Außenkante der Staatsgrenze
+                    weight: 1.8,
+                    opacity: 0.6,
+                    dashArray: '6, 3'
+                };
+            }
+        }).addTo(map);
+    })
+    .catch(err => console.error("Fehler beim Laden von europa_1900.geojson:", err));
+
+
+// 2. Hilfsfunktion: Kyrillische Schriftzeichen durch lateinische Alt-Tags ersetzen
+function getLatinName(properties) {
+    if (!properties) return "";
+    
+    // Bevorzugt deutsches, englisches oder lateinisches Namensfeld
+    let latinName = properties["name:de"] || properties["name:en"] || properties["name:latin"] || properties.name || "";
+    
+    // Prüfen, ob noch kyrillische Zeichen vorhanden sind – wenn ja, bereinigen
+    if (/[\u0400-\u04FF]/.test(latinName)) {
+        if (latinName.includes("Губерния") || latinName.includes("Guberniya")) {
+            latinName = latinName.replace(/Губерния|Guberniya/gi, "Gouvernement").trim();
+        }
+        // Falls der Hauptname kyrillisch war und kein name:de vorhanden war, Fallback auf name:en/ISO
+        if (properties["name:en"]) latinName = properties["name:en"];
+    }
+    
+    return latinName;
+}
+
+
+// 3. Laden der PROVINZEN / GOUVERNEMENTS (Admin-1900-geojson.geojson)
 fetch('Admin-1900-geojson.geojson')
     .then(response => response.json())
     .then(data => {
         L.geoJSON(data, {
             pane: 'bordersPane',
             style: function(feature) {
-                // Sehr feine und dezent transparente Binnengrenzen
                 return {
                     fill: false,
-                    color: '#7f8c8d',     // Muted Grau/Brau
-                    weight: 0.8,          // Sehr schlanke Linienstärke
-                    opacity: 0.35,        // Hohe Transparenz
-                    dashArray: '3, 3'     // Feines Strichmuster
+                    color: '#5a6268',     // Dünne Binnengrenzen
+                    weight: 1.0,          // Etwas sichtbarer
+                    opacity: 0.5,         // Transparenz moderat angehoben
+                    dashArray: '3, 3'
                 };
             },
             onEachFeature: function(feature, layer) {
-                const name = feature.properties && feature.properties.name ? feature.properties.name : "";
+                // Nur lateinische Namen verwenden
+                const name = getLatinName(feature.properties);
                 
                 if (name) {
-                    // Popup beim Anklicken der Grenze
                     layer.bindPopup("<b>" + name + "</b>");
 
-                    // Berechnet das geometrische Zentrum für die dezente Beschriftung
                     if (layer.getBounds) {
                         const center = layer.getBounds().getCenter();
 
@@ -180,7 +233,7 @@ fetch('Admin-1900-geojson.geojson')
             }
         }).addTo(map);
 
-        // Manuelles Label für Radom (da in der GeoJSON fehlend)
+        // Manuelles Label für Radom
         L.marker([51.402, 21.147], {
             pane: 'specialCitiesPane',
             icon: L.divIcon({
@@ -193,7 +246,7 @@ fetch('Admin-1900-geojson.geojson')
         }).addTo(map);
 
     })
-    .catch(err => console.error("Fehler beim Laden:", err));
+    .catch(err => console.error("Fehler beim Laden von Admin-1900-geojson.geojson:", err));
 
     // 5. Imperien-Labels an den gewünschten Positionen
     const empires = [
