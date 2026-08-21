@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Europa um 1900 - VH History Style</title>
+    <title>Europa um 1900 - OpenHistoricalMap Base</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -23,10 +23,10 @@
         #map {
             width: 100vw;
             height: 100vh;
-            background-color: #d4dedd;
+            background-color: #b5d0d0; /* Hintergrundfarbe für Ozeane bei fehlenden Kacheln */
         }
 
-        /* 1. Sämtliche Hintergründe, Rahmen & Pfeile von Leaflet-Tooltips strikt ausblenden */
+        /* 1. Sämtliche Hintergründe, Rahmen & Pfeile von Leaflet-Tooltips ausblenden */
         .leaflet-tooltip,
         .leaflet-tooltip-pane .leaflet-tooltip {
             background: transparent !important;
@@ -93,13 +93,15 @@
     map.createPane('specialCitiesPane');
     map.getPane('specialCitiesPane').style.zIndex = 500;
 
-    // 3. Basiskarte (CARTO Voyager Nolabels)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap &copy; CARTO'
+    // 3. OpenHistoricalMap (OHM) Tile-Layer als echtes Fundament (1900)
+    L.tileLayer('https://tile.openhistoricalmap.org/historical/{z}/{x}/{y}.png?datetime=1900-01-01T00:00:00Z', {
+        maxZoom: 18,
+        minZoom: 3,
+        opacity: 1.0,
+        attribution: '&copy; <a href="https://www.openhistoricalmap.org/">OpenHistoricalMap</a> contributors'
     }).addTo(map);
 
-    // 4. Historische Grenzen
+    // 4. Eigene GeoJSON-Grenzen (Optional – nur als dezent hervorgehobener Umriss)
     fetch('europa_1900.geojson')
         .then(response => response.json())
         .then(data => {
@@ -107,11 +109,11 @@
                 pane: 'bordersPane',
                 style: function(feature) {
                     return {
-                        fillColor: '#fcfbfa',
+                        fillColor: 'transparent', // Auf transparent gesetzt, damit OHM-Kartendetails sichtbar bleiben
                         weight: 1.2,
-                        opacity: 0.9,
-                        color: '#7f8c8d',
-                        fillOpacity: 0.35
+                        opacity: 0.8,
+                        color: '#4a3b32',          // Dunkles Sepia für Akzentlinien
+                        fillOpacity: 0
                     };
                 }
             }).addTo(map);
@@ -122,17 +124,17 @@
     const empires = [
         { 
             name: "Deutsches Kaiserreich", 
-            coords: [51.7, 16.9],  // Zwischen Posen (52.4) und Breslau (51.1)
+            coords: [51.7, 16.9],  // Zwischen Posen und Breslau
             anchor: [100, 10]
         },
         { 
             name: "Russländisches Reich", 
-            coords: [51.7, 21.8],  // Zwischen Warschau (52.2) und Lublin (51.2)
+            coords: [51.7, 21.8],  // Zwischen Warschau und Lublin
             anchor: [100, 10]
         },
         { 
             name: "Österreich-Ungarn", 
-            coords: [49.5, 19.9],  // Direkt unterhalb von Krakau (50.0)
+            coords: [49.5, 19.9],  // Unterhalb von Krakau
             anchor: [100, 10]
         }
     ];
