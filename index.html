@@ -140,7 +140,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-  // 1. Karte initialisieren
+ // 1. Karte initialisieren
     const map = L.map('map', {
         zoomSnap: 0.25,
         zoomDelta: 0.5,
@@ -181,7 +181,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
 
-        // Data-Fetches (Inklusive Europa-Karte)
+        // Data-Fetches
         const fetchEurope    = fetch('europa_1900.geojson').then(r => r.json()).catch(() => null);
         const fetchGermany   = fetch('Deutsches-Kaiserreich_1914.json').then(r => r.json());
         const fetchAustria   = fetch('Oesterreich-1908.json').then(r => r.json());
@@ -199,13 +199,13 @@
         ])
         .then(([europeData, germanyData, austriaData, russiaData, boehmenData, maehrenData, schlesienData, ungarnData, adminData]) => {
 
-            // Restliches Europa laden (Imperien filtern)
+            // A. Europa-Karte laden, ABER die 3 Reiche ausfiltern
             if (europeData) {
                 L.geoJSON(europeData, {
                     pane: 'empiresPane',
                     filter: function(feature) {
                         const name = (feature.properties && (feature.properties.NAME || feature.properties.name || "")).toLowerCase();
-                        // Schließt die drei Imperien aus, damit sie nicht überlagert werden
+                        // Filtert Deutsches Reich, Österreich-Ungarn und Russland heraus
                         return !name.includes("german") && !name.includes("deutsch") &&
                                !name.includes("austria") && !name.includes("österreich") &&
                                !name.includes("russia") && !name.includes("russland");
@@ -214,7 +214,7 @@
                 }).addTo(map);
             }
 
-            // A. Die 3 Großreiche mit Farbfüllung
+            // B. Die 3 Großreiche laden
             L.geoJSON(germanyData, {
                 pane: 'empiresPane',
                 style: { fill: true, fillColor: '#1e2b37', fillOpacity: 0.18, stroke: true, color: '#1e2b37', weight: 2 }
@@ -230,7 +230,7 @@
                 style: { fill: true, fillColor: '#922b21', fillOpacity: 0.18, stroke: true, color: '#922b21', weight: 2 }
             }).addTo(map);
 
-            // B. Feine gestrichelte Untergrenzen (angepasst, um durchgehende Linien bei Überlappung zu vermeiden)
+            // C. Binnengrenzen (nur gestrichelt)
             const subBorderStyle = {
                 fill: false,
                 stroke: true,
@@ -245,7 +245,7 @@
             L.geoJSON(schlesienData, { pane: 'subbordersPane', style: subBorderStyle }).addTo(map);
             L.geoJSON(ungarnData,    { pane: 'subbordersPane', style: subBorderStyle }).addTo(map);
 
-            // C. Admin-Ebenen / Gouvernements
+            // D. Admin-Ebenen / Gouvernements
             L.geoJSON(adminData, {
                 pane: 'subbordersPane',
                 style: subBorderStyle,
@@ -277,9 +277,7 @@
                 }
             }).addTo(map);
 
-            // D. Platzierte Regional-Labels
-            
-            // Königreich Polen (Über Warschau)
+            // E. Label Königreich Polen (über Warschau gesetzt)
             provinceLabelsGroup.addLayer(L.marker([52.4, 20.8], {
                 pane: 'specialCitiesPane',
                 icon: L.divIcon({
@@ -291,37 +289,13 @@
                 interactive: false
             }));
 
-            // Königreich Galizien (Minimal höher)
-            provinceLabelsGroup.addLayer(L.marker([49.8, 23.5], {
-                pane: 'specialCitiesPane',
-                icon: L.divIcon({
-                    className: 'region-label-auto',
-                    html: 'Königreich Galizien',
-                    iconSize: [200, 20],
-                    iconAnchor: [100, 10]
-                }),
-                interactive: false
-            }));
-
-            // Provinz Posen (Leicht nach unten korrigiert)
-            provinceLabelsGroup.addLayer(L.marker([52.32, 17.20], {
-                pane: 'specialCitiesPane',
-                icon: L.divIcon({
-                    className: 'region-label-auto',
-                    html: 'Provinz Posen',
-                    iconSize: [180, 20],
-                    iconAnchor: [90, 10]
-                }),
-                interactive: false
-            }));
-
         })
         .catch(err => console.error("Fehler beim Laden der GeoJSON-Dateien:", err));
 
-        // Imperien-Labels (Russland weiter nach Westen versetzt)
+        // Imperien-Labels (Russland wieder etwas höher gesetzt)
         const empireData = [
             { name: "Deutsches Kaiserreich", coords: [51.7, 15.8] },
-            { name: "Russländisches Reich", coords: [50.8, 20.5] }, // Versetzt nach Westen / unter Warschau
+            { name: "Russländisches Reich", coords: [52.1, 24.5] },
             { name: "Österreich-Ungarn", coords: [48.8, 19.5] }
         ];
 
@@ -338,7 +312,7 @@
             }).addTo(map);
         });
 
-        // Städte & Koordinaten-Anpassung Krakau (Leicht nach unten versetzt)
+        // Städte & Sonderposition für Krakau
         const markerColor = "#2c3e50";
         const specialCities = ["Posen", "Warschau", "Lemberg", "Krakau"];
 
@@ -354,7 +328,6 @@
         });
 
         function addCityToMap(name, lat, lng) {
-            // Krakau-Sonderposition leicht nach unten verschieben
             if (name === "Krakau" || name === "Kraków") {
                 lat = 50.01;
                 lng = 19.94;
@@ -414,7 +387,6 @@
                 });
             })
             .catch(err => console.error("Fehler beim Laden der Städte:", err));
-
     });
 </script>
 
