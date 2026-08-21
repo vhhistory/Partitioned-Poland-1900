@@ -1,0 +1,29 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Provinz Posen", "color": "#e74c3c" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[15.8, 52.8], [17.8, 53.1], [18.9, 52.3], [18.1, 51.4], [16.8, 51.5], [15.8, 52.8]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Kongresspolen (Königreich Polen)", "color": "#3498db" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[18.0, 52.3], [23.1, 53.5], [23.8, 50.8], [19.8, 50.1], [18.0, 52.3]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Galizien", "color": "#2ecc71" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[18.9, 49.8], [26.4, 50.5], [26.2, 47.8], [19.5, 49.2], [18.9, 49.8]]]
+      }
+    }
+  ]
+}
