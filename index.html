@@ -121,7 +121,17 @@
             text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.9), -1px -1px 2px rgba(255, 255, 255, 0.9);
         }
 
-        /* Anpassen des Layer-Controls im historischen Design */
+        .region-label-poland {
+            font-size: 11px;
+            font-weight: 700;
+            color: rgba(30, 40, 50, 0.85);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            pointer-events: none;
+            text-shadow: 1px 1px 3px #ffffff, -1px -1px 3px #ffffff;
+        }
+
+        /* Layer-Control Styling */
         .leaflet-control-layers {
             border-radius: 6px !important;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
@@ -164,7 +174,6 @@
     map.createPane('specialCitiesPane');
     map.getPane('specialCitiesPane').style.zIndex = 500;
 
-    // Layer-Gruppe für Eisenbahnen und Provinz-Labels
     const railwayLayerGroup = L.layerGroup();
     const provinceLabelsGroup = L.layerGroup().addTo(map);
 
@@ -172,8 +181,7 @@
         "🚂 Eisenbahnnetz (1900)": railwayLayerGroup
     };
     
-    // Layer-Control oben rechts hinzufügen
-    const layerControl = L.control.layers(null, overlayMaps, { collapsed: false }).addTo(map);
+    L.control.layers(null, overlayMaps, { collapsed: false }).addTo(map);
 
     // Events zum Umschalten
     map.on('overlayadd', function(e) {
@@ -181,7 +189,7 @@
             map.removeLayer(provinceLabelsGroup);
             document.body.classList.add('railways-active');
             toggleLabelBackgrounds(true);
-            updateEmpirePositions(true); // Imperien-Positionen anpassen
+            updateEmpirePositions(true);
         }
     });
 
@@ -190,11 +198,10 @@
             map.addLayer(provinceLabelsGroup);
             document.body.classList.remove('railways-active');
             toggleLabelBackgrounds(false);
-            updateEmpirePositions(false); // Zurück zur Standardposition
+            updateEmpirePositions(false);
         }
     });
 
-    // Hilfsfunktion zum Ein-/Ausschalten der verstärkten Schattierung
     function toggleLabelBackgrounds(enable) {
         const labels = document.querySelectorAll('.city-label, .city-label-special, .empire-label');
         labels.forEach(label => {
@@ -219,7 +226,7 @@
         attribution: '&copy; OpenHistoricalMap'
     }).addTo(map);
 
-    // 4. Hilfsfunktion Name (Kürzt "Gouvernement" zu "Gouv.")
+    // 4. Hilfsfunktion Name
     function getLatinName(properties) {
         if (!properties) return "";
         let name = properties["name:de"] || properties["name:en"] || properties["name:latin"] || properties.NAME || properties.name || "";
@@ -229,369 +236,332 @@
             else if (properties["name:en"]) name = properties["name:en"];
         }
 
-        // "Gouvernement" und Varianten durch "Gouv." ersetzen
-        name = name.replace(/Gouvernement|Guberniya|Губерния/gi, "Gouv.").trim();
-
-        return name;
+        return name.replace(/Gouvernement|Guberniya|Губерния/gi, "Gouv.").trim();
     }
-
-document.addEventListener('DOMContentLoaded', function() {
 
     document.addEventListener('DOMContentLoaded', function() {
 
-    // 5. Imperien & Provinzen laden
-    const fetchGermany   = fetch('Deutsches-Kaiserreich_1914.json').then(r => r.json());
-    const fetchAustria   = fetch('Oesterreich-1908.json').then(r => r.json());
-    const fetchRussia    = fetch('Russland_1914_perfekt.geojson').then(r => r.json());
-    const fetchEurope    = fetch('europa_1900.geojson').then(r => r.json());
+        // 5. Imperien & Provinzen laden
+        const fetchGermany   = fetch('Deutsches-Kaiserreich_1914.json').then(r => r.json());
+        const fetchAustria   = fetch('Oesterreich-1908.json').then(r => r.json());
+        const fetchRussia    = fetch('Russland_1914_perfekt.geojson').then(r => r.json());
+        const fetchEurope    = fetch('europa_1900.geojson').then(r => r.json());
 
-    // Provinzen laden
-    const fetchBoehmen   = fetch('Boehmen.json').then(r => r.json());
-    const fetchMaehren   = fetch('Maehren.json').then(r => r.json());
-    const fetchSchlesien = fetch('Schlesien.json').then(r => r.json());
-    const fetchUngarn    = fetch('Ungarn.json').then(r => r.json());
+        // Provinzen
+        const fetchBoehmen   = fetch('Boehmen.json').then(r => r.json());
+        const fetchMaehren   = fetch('Maehren.json').then(r => r.json());
+        const fetchSchlesien = fetch('Schlesien.json').then(r => r.json());
+        const fetchUngarn    = fetch('Ungarn.json').then(r => r.json());
 
-    Promise.all([
-        fetchGermany, fetchAustria, fetchRussia, fetchEurope,
-        fetchBoehmen, fetchMaehren, fetchSchlesien, fetchUngarn
-    ])
-    .then(([germanyData, austriaData, russiaData, europeData, boehmenData, maehrenData, schlesienData, ungarnData]) => {
+        Promise.all([
+            fetchGermany, fetchAustria, fetchRussia, fetchEurope,
+            fetchBoehmen, fetchMaehren, fetchSchlesien, fetchUngarn
+        ])
+        .then(([germanyData, austriaData, russiaData, europeData, boehmenData, maehrenData, schlesienData, ungarnData]) => {
 
-        // --- Hauptimperien (Hintergrund/Gesamtreiche) ---
-        L.geoJSON(germanyData, {
-            pane: 'empiresPane',
-            style: { fill: true, fillColor: '#1e2b37', fillOpacity: 0.15, stroke: true, color: '#1e2b37', weight: 2.5, opacity: 0.85 }
-        }).addTo(map);
-
-        L.geoJSON(austriaData, {
-            pane: 'empiresPane',
-            style: { fill: true, fillColor: '#b9770e', fillOpacity: 0.15, stroke: true, color: '#b9770e', weight: 2.5, opacity: 0.85 }
-        }).addTo(map);
-
-        L.geoJSON(russiaData, {
-            pane: 'empiresPane',
-            style: { fill: true, fillColor: '#922b21', fillOpacity: 0.15, stroke: true, color: '#922b21', weight: 2.5, opacity: 0.85 }
-        }).addTo(map);
-
-        // --- Einheitlicher Stil für alle Provinzen (wie Posen / Galizien) ---
-        const standardProvinceStyle = {
-            fill: true,
-            fillColor: '#34495e',
-            fillOpacity: 0.15,
-            stroke: true,
-            color: '#34495e',
-            weight: 1.5,
-            opacity: 0.85
-        };
-
-        // 1. Böhmen, Mähren, Schlesien und Ungarn wie andere Provinzen anzeigen
-        L.geoJSON(boehmenData,   { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
-        L.geoJSON(maehrenData,   { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
-        L.geoJSON(schlesienData, { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
-        L.geoJSON(ungarnData,    { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
-
-        // --- Hauptkarte Europa 1900 (Provinzen anzeigen, Gouvernement-Labels filtern) ---
-        L.geoJSON(europeData, {
-            pane: 'empiresPane',
-            filter: function(feature) {
-                const p = feature.properties || {};
-                const rawName = JSON.stringify(p).toLowerCase();
-
-                // 3. Nur die übergeordneten Hauptreichs-Shapes ausfiltern,
-                // Provinzen (Posen, Galizien, Suwalki etc.) werden durchgelassen
-                const isMainGermany = rawName.includes("deutsches kaiserreich") || rawName.includes("german empire");
-                const isMainAustria = rawName.includes("österreich-ungarn") || rawName.includes("austro-hungarian");
-                const isMainRussia  = rawName.includes("russisches kaiserreich") || rawName.includes("russian empire");
-
-                return !isMainGermany && !isMainAustria && !isMainRussia;
-            },
-            onEachFeature: function(feature, layer) {
-                const p = feature.properties || {};
-                const rawName = JSON.stringify(p).toLowerCase();
-
-                // 2. Erfassen aller russland-polnischen Gouvernements
-                const isPolishGov = rawName.includes("suwalki") || rawName.includes("suwałki") || 
-                                    rawName.includes("gouvernement") || rawName.includes("gov") ||
-                                    rawName.includes("warschau") || rawName.includes("kalisch") ||
-                                    rawName.includes("kielce") || rawName.includes("lublin") ||
-                                    rawName.includes("lomza") || rawName.includes("radom") ||
-                                    rawName.includes("siedlce") || rawName.includes("piotrkow");
-
-                // Alle bisherigen/einzelnen Labels entfernen
-                if (layer.getTooltip()) {
-                    layer.unbindTooltip();
-                }
-
-                if (isPolishGov) {
-                    // Namen überschreiben
-                    feature.properties.name = "Königreich Polen";
-                    feature.properties.NAME = "Königreich Polen";
-                    
-                    // Nur EIN zentrales Label vergeben
-                    layer.bindTooltip("Königreich Polen", {
-                        permanent: false,
-                        direction: 'center',
-                        className: 'region-label-poland'
-                    });
-                } else {
-                    // Jahreszahlen aus Titeln bereinigen
-                    for (let key in feature.properties) {
-                        if (typeof feature.properties[key] === 'string') {
-                            feature.properties[key] = feature.properties[key].replace(/\b(18|19|20)\d{2}\b/g, '').trim();
-                        }
-                    }
-                }
-            },
-            style: standardProvinceStyle
-        }).addTo(map);
-
-    })
-    .catch(err => console.error("Fehler beim Laden der Kartendaten:", err));
-
-});
-    
-    // 6. Admin (Admin-1900-geojson.geojson)
-    fetch('Admin-1900-geojson.geojson')
-        .then(res => res.json())
-        .then(data => {
-            L.geoJSON(data, {
-                pane: 'bordersPane',
-                filter: function(feature) {
-                    const name = getLatinName(feature.properties).toLowerCase();
-                    const rawProps = JSON.stringify(feature.properties || {}).toLowerCase();
-                    
-                    const isWolhynien = name.includes("wolhynien") || name.includes("volhyn") || rawProps.includes("wolhynien") || rawProps.includes("volhyn");
-                    const isPodolien = name.includes("podol") || rawProps.includes("podol");
-                    
-                    // Suwalki, Kowno und Kurland blockieren
-                    const isSuwalki = name.includes("suwalki") || name.includes("suwałki") || name.includes("suvalki") || rawProps.includes("suwalki");
-                    const isKowno = name.includes("kowno") || name.includes("kovno") || name.includes("kaunas") || rawProps.includes("kovno") || rawProps.includes("kowno");
-                    const isKurland = name.includes("kurland") || name.includes("courland") || name.includes("kurzemes") || rawProps.includes("kurland") || rawProps.includes("courland");
-
-                    return !isWolhynien && !isPodolien && !isSuwalki && !isKowno && !isKurland;
-                },
-                style: {
-                    fill: false,
-                    color: '#4a5568',
-                    weight: 0.9,
-                    opacity: 0.45,
-                    dashArray: '3, 3'
-                },
-                onEachFeature: function(feature, layer) {
-                    const name = getLatinName(feature.properties);
-                    const lowerName = name.toLowerCase();
-                    
-                    if (name && !lowerName.includes("galizien") && !lowerName.includes("galicia")) {
-                        layer.bindPopup("<b>" + name + "</b>");
-
-                        if (layer.getBounds) {
-                            const labelMarker = L.marker(layer.getBounds().getCenter(), {
-                                pane: 'specialCitiesPane',
-                                icon: L.divIcon({
-                                    className: 'region-label-auto',
-                                    html: name,
-                                    iconSize: [180, 20],
-                                    iconAnchor: [90, 10]
-                                }),
-                                interactive: false
-                            });
-                            provinceLabelsGroup.addLayer(labelMarker);
-                        }
-                    }
-                }
+            // Gesamtreiche
+            L.geoJSON(germanyData, {
+                pane: 'empiresPane',
+                style: { fill: true, fillColor: '#1e2b37', fillOpacity: 0.15, stroke: true, color: '#1e2b37', weight: 2.5, opacity: 0.85 }
             }).addTo(map);
 
-            // Radom & Galizien manuell zur Label-Gruppe hinzufügen
-            const radomMarker = L.marker([51.402, 21.147], {
-                pane: 'specialCitiesPane',
-                icon: L.divIcon({
-                    className: 'region-label-auto',
-                    html: 'Gouv. Radom',
-                    iconSize: [180, 20],
-                    iconAnchor: [90, 10]
-                }),
-                interactive: false
-            });
-            provinceLabelsGroup.addLayer(radomMarker);
+            L.geoJSON(austriaData, {
+                pane: 'empiresPane',
+                style: { fill: true, fillColor: '#b9770e', fillOpacity: 0.15, stroke: true, color: '#b9770e', weight: 2.5, opacity: 0.85 }
+            }).addTo(map);
 
-            const galizienMarker = L.marker([49.95, 24.03], {
-                pane: 'specialCitiesPane',
-                icon: L.divIcon({
-                    className: 'region-label-auto',
-                    html: 'Königreich Galizien und Lodomerien',
-                    iconSize: [260, 20],
-                    iconAnchor: [130, 20]
-                }),
-                interactive: false
-            });
-            provinceLabelsGroup.addLayer(galizienMarker);
-        })
-        .catch(err => console.error("Fehler bei Admin-1900-geojson.geojson:", err));
+            L.geoJSON(russiaData, {
+                pane: 'empiresPane',
+                style: { fill: true, fillColor: '#922b21', fillOpacity: 0.15, stroke: true, color: '#922b21', weight: 2.5, opacity: 0.85 }
+            }).addTo(map);
 
-    // 6b. Eisenbahnlinien laden (Gleis-Optik: Schwarz-Weiß gestrichelt mit Transparenz)
-    fetch('Eisenbahn-Linien.geojson')
-        .then(res => {
-            if (!res.ok) throw new Error("HTTP Fehler " + res.status);
-            return res.json();
-        })
-        .then(data => {
-            let swapCoords = false;
-            try {
-                let sampleCoords = data.features[0].geometry.coordinates;
-                while (Array.isArray(sampleCoords[0])) { sampleCoords = sampleCoords[0]; }
-                if (sampleCoords[0] > 35 && sampleCoords[0] < 70) {
-                    swapCoords = true;
-                }
-            } catch(e) {}
+            // Einheitlicher Stil für Provinzen
+            const standardProvinceStyle = {
+                fill: true,
+                fillColor: '#34495e',
+                fillOpacity: 0.15,
+                stroke: true,
+                color: '#34495e',
+                weight: 1.5,
+                opacity: 0.85
+            };
 
-            // 1. Untere Ebene: Dunkle Basislinie
-            const baseRailLayer = L.geoJSON(data, {
-                pane: 'railwaysPane',
-                coordsToLatLng: coords => swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]),
-                style: {
-                    color: '#1a1a1a',
-                    weight: 2.2,
-                    opacity: 0.6
-                }
-            });
+            // Böhmen, Mähren, Schlesien und Ungarn wie andere Provinzen
+            L.geoJSON(boehmenData,   { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
+            L.geoJSON(maehrenData,   { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
+            L.geoJSON(schlesienData, { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
+            L.geoJSON(ungarnData,    { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
 
-            // 2. Obere Ebene: Gestrichelte weiße Überlagerung ("Gleis-Effekt")
-            const dashRailLayer = L.geoJSON(data, {
-                pane: 'railwaysPane',
-                coordsToLatLng: coords => swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]),
-                style: {
-                    color: '#ffffff',
-                    weight: 1.0,
-                    opacity: 0.65,
-                    dashArray: '3, 4'
+            // Hauptkarte Europa 1900
+            L.geoJSON(europeData, {
+                pane: 'empiresPane',
+                filter: function(feature) {
+                    const p = feature.properties || {};
+                    const rawName = JSON.stringify(p).toLowerCase();
+
+                    // Hauptreich-Shapes filtern, Provinzen durchlassen
+                    const isMainGermany = rawName.includes("deutsches kaiserreich") || rawName.includes("german empire");
+                    const isMainAustria = rawName.includes("österreich-ungarn") || rawName.includes("austro-hungarian");
+                    const isMainRussia  = rawName.includes("russisches kaiserreich") || rawName.includes("russian empire");
+
+                    return !isMainGermany && !isMainAustria && !isMainRussia;
                 },
                 onEachFeature: function(feature, layer) {
-                    if (feature.properties) {
-                        const lineName = feature.properties.name || feature.properties.ref || "Eisenbahnstrecke";
-                        layer.bindPopup("<b>Eisenbahnlinie:</b> " + lineName);
+                    const p = feature.properties || {};
+                    const rawName = JSON.stringify(p).toLowerCase();
+
+                    const isPolishGov = rawName.includes("suwalki") || rawName.includes("suwałki") || 
+                                        rawName.includes("gouvernement") || rawName.includes("gov") ||
+                                        rawName.includes("warschau") || rawName.includes("kalisch") ||
+                                        rawName.includes("kielce") || rawName.includes("lublin") ||
+                                        rawName.includes("lomza") || rawName.includes("radom") ||
+                                        rawName.includes("siedlce") || rawName.includes("piotrkow");
+
+                    if (layer.getTooltip()) {
+                        layer.unbindTooltip();
                     }
-                }
-            });
 
-            // Beide Ebenen in die steuerbare Layer-Gruppe einfügen
-            railwayLayerGroup.addLayer(baseRailLayer);
-            railwayLayerGroup.addLayer(dashRailLayer);
-        })
-        .catch(err => console.error("Fehler beim Laden von Eisenbahn-Linien.geojson:", err));
-
-    // 7. Imperien-Labels mit dynamischen Koordinaten
-    const empireData = [
-        { 
-            name: "Deutsches Kaiserreich", 
-            defaultCoords: [51.7, 15.8], 
-            railCoords: [51.7, 15.3] // Etwas weiter links
-        },
-        { 
-            name: "Russländisches Reich", 
-            defaultCoords: [51.7, 23.0], 
-            railCoords: [51.7, 24.2] // Rechts von Warschau
-        },
-        { 
-            name: "Österreich-Ungarn", 
-            defaultCoords: [49.5, 19.9], 
-            railCoords: [49.5, 19.9] 
-        }
-    ];
-
-    const empireMarkers = [];
-
-    empireData.forEach(emp => {
-        const marker = L.marker(emp.defaultCoords, {
-            pane: 'specialCitiesPane',
-            icon: L.divIcon({
-                className: 'empire-label',
-                html: emp.name,
-                iconSize: [220, 20],
-                iconAnchor: [110, 10]
-            }),
-            interactive: false
-        }).addTo(map);
-        
-        empireMarkers.push({ marker, data: emp });
-    });
-
-    // Hilfsfunktion zum Verschieben der Imperien-Labels
-    function updateEmpirePositions(isRailwayActive) {
-        empireMarkers.forEach(item => {
-            const newCoords = isRailwayActive ? item.data.railCoords : item.data.defaultCoords;
-            item.marker.setLatLng(newCoords);
-        });
-    }
-
-    // 8. Städte
-    const markerColor = "#2c3e50";
-    const specialCities = ["Posen", "Warschau", "Lemberg"];
-
-    const starIcon = L.divIcon({
-        pane: 'specialCitiesPane',
-        html: `<svg height="18" width="18" viewBox="0 0 24 24">
-                 <polygon points="12,2 15,9 22,9 16,14 18,21 12,17 6,21 8,14 2,9 9,9" 
-                          fill="${markerColor}" stroke="#ffffff" stroke-width="1.5"/>
-               </svg>`,
-        className: '',
-        iconSize: [18, 18],
-        iconAnchor: [9, 9]
-    });
-
-    function addCityToMap(name, lat, lng) {
-        if (specialCities.includes(name)) {
-            L.marker([lat, lng], { icon: starIcon, zIndexOffset: 1000 })
-             .bindTooltip(name, { permanent: true, direction: 'right', offset: [10, 0], className: 'city-label-special' })
-             .addTo(map);
-        } else {
-            L.circleMarker([lat, lng], {
-                pane: 'citiesPane',
-                radius: 3.5,
-                fillColor: markerColor,
-                color: "#ffffff",
-                weight: 1,
-                fillOpacity: 0.9
-            })
-            .bindTooltip(name, { permanent: true, direction: 'right', offset: [6, 0], className: 'city-label' })
-            .addTo(map);
-        }
-    }
-
-    fetch('cities-geo')
-        .then(res => res.text())
-        .then(textData => {
-            try {
-                const geojson = JSON.parse(textData);
-                if (geojson.type || geojson.features) {
-                    L.geoJSON(geojson, {
-                        onEachFeature: (f) => {
-                            if (f.geometry && f.geometry.coordinates) {
-                                addCityToMap(f.properties.name || f.properties.NAME || "Stadt", f.geometry.coordinates[1], f.geometry.coordinates[0]);
+                    if (isPolishGov) {
+                        feature.properties.name = "Königreich Polen";
+                        feature.properties.NAME = "Königreich Polen";
+                        
+                        layer.bindTooltip("Königreich Polen", {
+                            permanent: false,
+                            direction: 'center',
+                            className: 'region-label-poland'
+                        });
+                    } else {
+                        for (let key in feature.properties) {
+                            if (typeof feature.properties[key] === 'string') {
+                                feature.properties[key] = feature.properties[key].replace(/\b(18|19|20)\d{2}\b/g, '').trim();
                             }
                         }
-                    });
-                    return;
-                }
-            } catch (e) {}
+                    }
+                },
+                style: standardProvinceStyle
+            }).addTo(map);
 
-            Papa.parse(textData, {
-                header: true,
-                skipEmptyLines: true,
-                complete: (results) => {
-                    results.data.forEach(row => {
-                        let name = 'Stadt', lat = null, lng = null;
-                        Object.keys(row).forEach(k => {
-                            const ck = k.trim().toLowerCase();
-                            if (ck === 'name' || ck === 'stadt') name = row[k].trim();
-                            if (ck === 'lat' || ck === 'latitude') lat = parseFloat(String(row[k]).replace(',', '.'));
-                            if (ck === 'lng' || ck === 'longitude' || ck === 'long') lng = parseFloat(String(row[k]).replace(',', '.'));
-                        });
-                        if (lat && lng && !isNaN(lat) && !isNaN(lng)) addCityToMap(name, lat, lng);
-                    });
-                }
-            });
         })
-        .catch(err => console.error("Fehler beim Laden der Städte:", err));
+        .catch(err => console.error("Fehler beim Laden der Kartendaten:", err));
+
+        // 6. Admin
+        fetch('Admin-1900-geojson.geojson')
+            .then(res => res.json())
+            .then(data => {
+                L.geoJSON(data, {
+                    pane: 'bordersPane',
+                    filter: function(feature) {
+                        const name = getLatinName(feature.properties).toLowerCase();
+                        const rawProps = JSON.stringify(feature.properties || {}).toLowerCase();
+                        
+                        const isWolhynien = name.includes("wolhynien") || name.includes("volhyn") || rawProps.includes("wolhynien") || rawProps.includes("volhyn");
+                        const isPodolien = name.includes("podol") || rawProps.includes("podol");
+                        
+                        const isSuwalki = name.includes("suwalki") || name.includes("suwałki") || name.includes("suvalki") || rawProps.includes("suwalki");
+                        const isKowno = name.includes("kowno") || name.includes("kovno") || name.includes("kaunas") || rawProps.includes("kovno") || rawProps.includes("kowno");
+                        const isKurland = name.includes("kurland") || name.includes("courland") || name.includes("kurzemes") || rawProps.includes("kurland") || rawProps.includes("courland");
+
+                        return !isWolhynien && !isPodolien && !isSuwalki && !isKowno && !isKurland;
+                    },
+                    style: {
+                        fill: false,
+                        color: '#4a5568',
+                        weight: 0.9,
+                        opacity: 0.45,
+                        dashArray: '3, 3'
+                    },
+                    onEachFeature: function(feature, layer) {
+                        const name = getLatinName(feature.properties);
+                        const lowerName = name.toLowerCase();
+                        
+                        if (name && !lowerName.includes("galizien") && !lowerName.includes("galicia")) {
+                            layer.bindPopup("<b>" + name + "</b>");
+
+                            if (layer.getBounds) {
+                                const labelMarker = L.marker(layer.getBounds().getCenter(), {
+                                    pane: 'specialCitiesPane',
+                                    icon: L.divIcon({
+                                        className: 'region-label-auto',
+                                        html: name,
+                                        iconSize: [180, 20],
+                                        iconAnchor: [90, 10]
+                                    }),
+                                    interactive: false
+                                });
+                                provinceLabelsGroup.addLayer(labelMarker);
+                            }
+                        }
+                    }
+                }).addTo(map);
+
+                // Radom & Galizien manuell hinzufügen
+                const radomMarker = L.marker([51.402, 21.147], {
+                    pane: 'specialCitiesPane',
+                    icon: L.divIcon({
+                        className: 'region-label-auto',
+                        html: 'Gouv. Radom',
+                        iconSize: [180, 20],
+                        iconAnchor: [90, 10]
+                    }),
+                    interactive: false
+                });
+                provinceLabelsGroup.addLayer(radomMarker);
+
+                const galizienMarker = L.marker([49.95, 24.03], {
+                    pane: 'specialCitiesPane',
+                    icon: L.divIcon({
+                        className: 'region-label-auto',
+                        html: 'Königreich Galizien und Lodomerien',
+                        iconSize: [260, 20],
+                        iconAnchor: [130, 20]
+                    }),
+                    interactive: false
+                });
+                provinceLabelsGroup.addLayer(galizienMarker);
+            })
+            .catch(err => console.error("Fehler bei Admin-1900-geojson.geojson:", err));
+
+        // 6b. Eisenbahnlinien
+        fetch('Eisenbahn-Linien.geojson')
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP Fehler " + res.status);
+                return res.json();
+            })
+            .then(data => {
+                let swapCoords = false;
+                try {
+                    let sampleCoords = data.features[0].geometry.coordinates;
+                    while (Array.isArray(sampleCoords[0])) { sampleCoords = sampleCoords[0]; }
+                    if (sampleCoords[0] > 35 && sampleCoords[0] < 70) {
+                        swapCoords = true;
+                    }
+                } catch(e) {}
+
+                const baseRailLayer = L.geoJSON(data, {
+                    pane: 'railwaysPane',
+                    coordsToLatLng: coords => swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]),
+                    style: { color: '#1a1a1a', weight: 2.2, opacity: 0.6 }
+                });
+
+                const dashRailLayer = L.geoJSON(data, {
+                    pane: 'railwaysPane',
+                    coordsToLatLng: coords => swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]),
+                    style: { color: '#ffffff', weight: 1.0, opacity: 0.65, dashArray: '3, 4' },
+                    onEachFeature: function(feature, layer) {
+                        if (feature.properties) {
+                            const lineName = feature.properties.name || feature.properties.ref || "Eisenbahnstrecke";
+                            layer.bindPopup("<b>Eisenbahnlinie:</b> " + lineName);
+                        }
+                    }
+                });
+
+                railwayLayerGroup.addLayer(baseRailLayer);
+                railwayLayerGroup.addLayer(dashRailLayer);
+            })
+            .catch(err => console.error("Fehler beim Laden von Eisenbahn-Linien.geojson:", err));
+
+        // 7. Imperien-Labels
+        const empireData = [
+            { name: "Deutsches Kaiserreich", defaultCoords: [51.7, 15.8], railCoords: [51.7, 15.3] },
+            { name: "Russländisches Reich", defaultCoords: [51.7, 23.0], railCoords: [51.7, 24.2] },
+            { name: "Österreich-Ungarn", defaultCoords: [49.5, 19.9], railCoords: [49.5, 19.9] }
+        ];
+
+        const empireMarkers = [];
+
+        empireData.forEach(emp => {
+            const marker = L.marker(emp.defaultCoords, {
+                pane: 'specialCitiesPane',
+                icon: L.divIcon({
+                    className: 'empire-label',
+                    html: emp.name,
+                    iconSize: [220, 20],
+                    iconAnchor: [110, 10]
+                }),
+                interactive: false
+            }).addTo(map);
+            
+            empireMarkers.push({ marker, data: emp });
+        });
+
+        function updateEmpirePositions(isRailwayActive) {
+            empireMarkers.forEach(item => {
+                const newCoords = isRailwayActive ? item.data.railCoords : item.data.defaultCoords;
+                item.marker.setLatLng(newCoords);
+            });
+        }
+
+        // 8. Städte
+        const markerColor = "#2c3e50";
+        const specialCities = ["Posen", "Warschau", "Lemberg"];
+
+        const starIcon = L.divIcon({
+            pane: 'specialCitiesPane',
+            html: `<svg height="18" width="18" viewBox="0 0 24 24">
+                     <polygon points="12,2 15,9 22,9 16,14 18,21 12,17 6,21 8,14 2,9 9,9" 
+                              fill="${markerColor}" stroke="#ffffff" stroke-width="1.5"/>
+                   </svg>`,
+            className: '',
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+        });
+
+        function addCityToMap(name, lat, lng) {
+            if (specialCities.includes(name)) {
+                L.marker([lat, lng], { icon: starIcon, zIndexOffset: 1000 })
+                 .bindTooltip(name, { permanent: true, direction: 'right', offset: [10, 0], className: 'city-label-special' })
+                 .addTo(map);
+            } else {
+                L.circleMarker([lat, lng], {
+                    pane: 'citiesPane',
+                    radius: 3.5,
+                    fillColor: markerColor,
+                    color: "#ffffff",
+                    weight: 1,
+                    fillOpacity: 0.9
+                })
+                .bindTooltip(name, { permanent: true, direction: 'right', offset: [6, 0], className: 'city-label' })
+                .addTo(map);
+            }
+        }
+
+        fetch('cities-geo')
+            .then(res => res.text())
+            .then(textData => {
+                try {
+                    const geojson = JSON.parse(textData);
+                    if (geojson.type || geojson.features) {
+                        L.geoJSON(geojson, {
+                            onEachFeature: (f) => {
+                                if (f.geometry && f.geometry.coordinates) {
+                                    addCityToMap(f.properties.name || f.properties.NAME || "Stadt", f.geometry.coordinates[1], f.geometry.coordinates[0]);
+                                }
+                            }
+                        });
+                        return;
+                    }
+                } catch (e) {}
+
+                Papa.parse(textData, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        results.data.forEach(row => {
+                            let name = 'Stadt', lat = null, lng = null;
+                            Object.keys(row).forEach(k => {
+                                const ck = k.trim().toLowerCase();
+                                if (ck === 'name' || ck === 'stadt') name = row[k].trim();
+                                if (ck === 'lat' || ck === 'latitude') lat = parseFloat(String(row[k]).replace(',', '.'));
+                                if (ck === 'lng' || ck === 'longitude' || ck === 'long') lng = parseFloat(String(row[k]).replace(',', '.'));
+                            });
+                            if (lat && lng && !isNaN(lat) && !isNaN(lng)) addCityToMap(name, lat, lng);
+                        });
+                    }
+                });
+            })
+            .catch(err => console.error("Fehler beim Laden der Städte:", err));
+
+    });
 </script>
 
 </body>
