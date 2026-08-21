@@ -262,7 +262,7 @@
         })
         .catch(err => console.error("Fehler bei europa_1900.geojson:", err));
 
-    // 6. Admin (Admin-1900-geojson.geojson)
+   // 6. Admin (Admin-1900-geojson.geojson)
     fetch('Admin-1900-geojson.geojson')
         .then(res => res.json())
         .then(data => {
@@ -274,8 +274,10 @@
                     
                     const isWolhynien = name.includes("wolhynien") || name.includes("volhyn") || rawProps.includes("wolhynien") || rawProps.includes("volhyn");
                     const isPodolien = name.includes("podol") || rawProps.includes("podol");
+                    // Suwalki / Suwałki herausfiltern
+                    const isSuwalki = name.includes("suwalki") || name.includes("suwałki") || name.includes("suvalki") || rawProps.includes("suwalki") || rawProps.includes("suwałki");
 
-                    return !isWolhynien && !isPodolien;
+                    return !isWolhynien && !isPodolien && !isSuwalki;
                 },
                 style: {
                     fill: false,
