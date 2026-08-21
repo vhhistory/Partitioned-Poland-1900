@@ -195,10 +195,10 @@
 
       // 1. Manuell platzierbare Regionen-Labels (Koordinaten hier anpassen!)
         const regionData = [
-            { name: "Provinz Posen", coords: [52.32, 17.20], className: 'region-label-auto' },
-            { name: "Provinz Schlesien", coords: [51.10, 17.03], className: 'region-label-auto' },
-            { name: "Königreich Galizien und Lodomerien", coords: [49.80, 23.50], className: 'region-label-auto' },
-            { name: "Königreich Polen", coords: [52.40, 20.80], className: 'region-label-poland' }
+            { name: "Provinz Posen", coords: [52.08, 17.01], className: 'region-label-auto' },
+            { name: "Provinz Schlesien", coords: [50.78, 17.06], className: 'region-label-auto' },
+            { name: "Königreich Galizien und Lodomerien", coords: [48.01, 20.98], className: 'region-label-auto' },
+            { name: "Königreich Polen", coords: [52.51, 21.06], className: 'region-label-poland' }
         ];
 
         regionData.forEach(reg => {
@@ -312,27 +312,14 @@
                     }
                 }
             }).addTo(map);
-
-            // E. Label Königreich Polen (über Warschau gesetzt)
-            provinceLabelsGroup.addLayer(L.marker([52.5, 21.0], {
-                pane: 'specialCitiesPane',
-                icon: L.divIcon({
-                    className: 'region-label-poland',
-                    html: 'Königreich Polen',
-                    iconSize: [200, 25],
-                    iconAnchor: [100, 12]
-                }),
-                interactive: false
-            }));
-
         })
         .catch(err => console.error("Fehler beim Laden der GeoJSON-Dateien:", err));
 
         // Imperien-Labels (Russland wieder etwas höher gesetzt)
         const empireData = [
             { name: "Deutsches Kaiserreich", coords: [51.7, 15.8] },
-            { name: "Russländisches Reich", coords: [51.5, 23.7] },
-            { name: "Österreich-Ungarn", coords: [48.8, 19.5] }
+            { name: "Russländisches Reich", coords: [51.5, 22.7] },
+            { name: "Österreich-Ungarn", coords: [49.8, 19.5] }
         ];
 
         empireData.forEach(emp => {
