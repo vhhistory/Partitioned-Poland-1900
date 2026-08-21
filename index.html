@@ -7,11 +7,15 @@
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <!-- PapaParse für CSV-Import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     
     <style>
-        html, body {
+        /* Basemap stummschalten (stark ausbleichen, entfärben & Kontrast senken) */
+.leaflet-tile-pane {
+    filter: grayscale(100%) opacity(0.35) contrast(70%) brightness(110%);
+}html, body {
             margin: 0;
             padding: 0;
             width: 100%;
