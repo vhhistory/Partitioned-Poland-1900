@@ -192,12 +192,18 @@
         const fetchSchlesien = fetch('Schlesien.json').then(r => r.json());
         const fetchUngarn    = fetch('Ungarn.json').then(r => r.json());
         const fetchAdmin     = fetch('Admin-1900-geojson.geojson').then(r => r.json());
-
+        // Eisenbahn-Linien mit exaktem Dateinamen laden
+        const fetchRailways  = fetch('Eisenbahn-Linien.geojson')
+            .then(r => r.json())
+            .catch(err => {
+                console.error("Fehler beim Laden von Eisenbahn-Linien.geojson:", err);
+                return null;
+            });
       // 1. Manuell platzierbare Regionen-Labels (Koordinaten hier anpassen!)
         const regionData = [
             { name: "Provinz Posen", coords: [52.08, 16.8], className: 'region-label-auto' },
             { name: "Provinz Schlesien", coords: [50.78, 17.06], className: 'region-label-auto' },
-            { name: "Königreich Galizien und Lodomerien", coords: [49.25, 22.5], className: 'region-label-auto' },
+            { name: "Königreich Galizien und Lodomerien", coords: [49.35, 23.0], className: 'region-label-auto' },
             { name: "Königreich Polen", coords: [52.51, 21.20], className: 'region-label-poland' }
         ];
 
@@ -223,7 +229,7 @@
 
         Promise.all([
             fetchEurope, fetchGermany, fetchAustria, fetchRussia,
-            fetchBoehmen, fetchMaehren, fetchSchlesien, fetchUngarn, fetchAdmin
+            fetchBoehmen, fetchMaehren, fetchSchlesien, fetchUngarn, fetchAdmin, fetchRailways
         ])
         .then(([europeData, germanyData, austriaData, russiaData, boehmenData, maehrenData, schlesienData, ungarnData, adminData]) => {
             
