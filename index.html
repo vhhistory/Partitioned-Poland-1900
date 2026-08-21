@@ -234,12 +234,17 @@
         return name;
     }
 
-    // 5. Imperien (europa_1900.geojson)
+   // 5. Imperien (europa_1900.geojson)
     fetch('europa_1900.geojson')
         .then(res => res.json())
         .then(data => {
             L.geoJSON(data, {
                 pane: 'empiresPane',
+                filter: function(feature) {
+                    // Falls die Polygone der Imperien Einzelteile enthalten,
+                    // stellen wir sicher, dass Ostpreußen als Teil des Deutschen Reiches geladen wird
+                    return true;
+                },
                 style: function(feature) {
                     const p = feature.properties || {};
                     const rawName = JSON.stringify(p).toLowerCase();
