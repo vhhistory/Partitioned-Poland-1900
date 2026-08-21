@@ -10,7 +10,7 @@
     <!-- PapaParse für CSV-Import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     
-  <style>
+ <style>
     html, body {
         margin: 0;
         padding: 0;
@@ -23,10 +23,10 @@
     #map {
         width: 100vw;
         height: 100vh;
-        background-color: #f4f1ea;
+        background-color: #f4f1ea; /* Pergament/Papier-Hintergrund */
     }
 
-    /* Tooltip-Resets */
+    /* Resets für Tooltips */
     .leaflet-tooltip,
     .leaflet-tooltip-pane .leaflet-tooltip {
         background: transparent !important;
@@ -58,26 +58,26 @@
         white-space: nowrap;
     }
 
-    /* Imperien-Labels (Ebenfalls dezent) */
+    /* Imperien-Labels (Textfarben passend zur Flächenfärbung) */
     .empire-label {
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 2.5px;
         text-transform: uppercase;
-        text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.9), -1px -1px 3px rgba(255, 255, 255, 0.9);
+        text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.95), -1px -1px 3px rgba(255, 255, 255, 0.95);
         pointer-events: none;
         white-space: nowrap;
     }
 
-    .empire-german { color: rgba(44, 62, 80, 0.7); }
-    .empire-russian { color: rgba(144, 44, 30, 0.7); }
-    .empire-austrian { color: rgba(180, 125, 20, 0.75); }
+    .empire-german { color: rgba(30, 50, 70, 0.75); }     /* Preußen / Deutsches Reich */
+    .empire-russian { color: rgba(120, 30, 20, 0.75); }    /* Russisches Reich */
+    .empire-austrian { color: rgba(140, 95, 10, 0.8); }    /* Österreich-Ungarn */
 
-    /* Provinzen & Gouvernements (Etwas prominenter über Opacity geregelt) */
+    /* Provinzen & Gouvernements (Moderater, eleganter Kontrast) */
     .region-label-auto {
         font-size: 10.5px;
         font-weight: 600;
-        color: rgba(40, 50, 60, 0.55); /* Leicht erhöhte Deckkraft */
+        color: rgba(40, 50, 60, 0.55);
         text-transform: capitalize;
         letter-spacing: 0.3px;
         text-align: center;
