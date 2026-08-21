@@ -234,15 +234,15 @@
 
         return name;
     }
-// 5. Imperien laden und kombinieren
+// 5. Imperien laden und auf der Karte verarbeiten
     const fetchGermany = fetch('Deutsches-Kaiserreich_1914.json').then(r => r.json());
     const fetchAustria = fetch('Österreich-1908.json').then(r => r.json());
-    const fetchEurope = fetch('europa_1900.geojson').then(r => r.json());
-    const fetchRussiaWest = fetch('Russland-Westgrenze.json').then(r => r.json()); // Hier den exakten Dateinamen eintragen
+    const fetchRussia  = fetch('Russland_1914_perfekt.geojson').then(r => r.json());
+    const fetchEurope  = fetch('europa_1900.geojson').then(r => r.json());
 
-    Promise.all([fetchGermany, fetchAustria, fetchEurope, fetchRussiaWest])
-        .then(([germanyData, austriaData, europeData, russiaWestData]) => {
-            
+    Promise.all([fetchGermany, fetchAustria, fetchRussia, fetchEurope])
+        .then(([germanyData, austriaData, russiaData, europeData]) => {
+
             // 5a. Deutsches Kaiserreich zeichnen
             L.geoJSON(germanyData, {
                 pane: 'empiresPane',
@@ -271,64 +271,50 @@
                 }
             }).addTo(map);
 
-            // 5c. Russland aus beiden Quellen zusammenfügen
-            try {
-                // Altes Russland aus europeData filtern
-                const oldRussiaFeature = europeData.features.find(f => {
-                    const raw = JSON.stringify(f.properties || {}).toLowerCase();
-                    return raw.includes("russi") || raw.includes("russisch");
-                });
-
-                // Neue exakte Westgrenze extrahieren
-                const newWestFeature = russiaWestData.features ? russiaWestData.features[0] : russiaWestData;
-
-                let mergedRussia = null;
-
-                if (oldRussiaFeature && newWestFeature && typeof turf !== 'undefined') {
-                    // Beide Russland-Teile miteinander verschmelzen (Union)
-                    mergedRussia = turf.union(oldRussiaFeature, newWestFeature);
-
-                    // Falls es immer noch minimal in Deutschland hineinreicht, Stanzen per Differenz
-                    const gPoly = germanyData.features ? germanyData.features[0] : germanyData;
-                    const aPoly = austriaData.features ? austriaData.features[0] : austriaData;
-                    const mask = turf.union(gPoly, aPoly);
-
-                    if (mask) {
-                        mergedRussia = turf.difference(mergedRussia, mask);
-                    }
-                } else {
-                    mergedRussia = newWestFeature || oldRussiaFeature;
+            // 5c. Russland (Perfekte Version) zeichnen
+            L.geoJSON(russiaData, {
+                pane: 'empiresPane',
+                style: {
+                    fill: true,
+                    fillColor: '#922b21',
+                    fillOpacity: 0.15,
+                    stroke: true,
+                    color: '#922b21',
+                    weight: 2.5,
+                    opacity: 0.85
                 }
+            }).addTo(map);
 
-                // Das neu berechnete Russland auf die Karte zeichnen
-                L.geoJSON(mergedRussia, {
-                    pane: 'empiresPane',
-                    style: {
+            // 5d. Europa-Karte laden, aber Deutschland, Österreich-Ungarn und Russland UNTERDRÜCKEN
+            L.geoJSON(europeData, {
+                pane: 'empiresPane',
+                filter: function(feature) {
+                    const p = feature.properties || {};
+                    const rawName = JSON.stringify(p).toLowerCase();
+
+                    // Prüfe, ob das Land eines der drei Imperien ist
+                    const isGermany = rawName.includes("german") || rawName.includes("deutsches") || rawName.includes("preußen") || rawName.includes("prussia");
+                    const isAustria = rawName.includes("austr") || rawName.includes("österreich") || rawName.includes("hungary") || rawName.includes("ungarn");
+                    const isRussia  = rawName.includes("russi") || rawName.includes("russisch");
+
+                    // Nur zurückgeben, wenn es KEINES der drei Länder ist
+                    return !isGermany && !isAustria && !isRussia;
+                },
+                style: function(feature) {
+                    return {
                         fill: true,
-                        fillColor: '#922b21',
+                        fillColor: '#34495e',
                         fillOpacity: 0.15,
                         stroke: true,
-                        color: '#922b21',
+                        color: '#34495e',
                         weight: 2.5,
                         opacity: 0.85
-                    }
-                }).addTo(map);
-
-            } catch (err) {
-                console.error("Fehler beim Zusammenfügen der Russland-Shapes:", err);
-                
-                // Fallback: Falls turf.union fehlschlägt, neues West-Shape direkt zeichnen
-                L.geoJSON(russiaWestData, {
-                    pane: 'empiresPane',
-                    style: {
-                        fill: true, fillColor: '#922b21', fillOpacity: 0.15,
-                        stroke: true, color: '#922b21', weight: 2.5, opacity: 0.85
-                    }
-                }).addTo(map);
-            }
+                    };
+                }
+            }).addTo(map);
 
         })
-        .catch(err => console.error("Fehler beim Laden der Dateisätze:", err));
+        .catch(err => console.error("Fehler beim Laden der Kartendaten:", err));
 
     // 6. Admin (Admin-1900-geojson.geojson)
     fetch('Admin-1900-geojson.geojson')
