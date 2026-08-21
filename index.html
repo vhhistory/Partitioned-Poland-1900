@@ -7,6 +7,344 @@
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- PapaParse für CSV-Import -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        #map {
+            width: 100vw;
+            height: 100vh;
+            background-color: #f4f1ea;
+        }
+
+        /* Basemap stummschalten (Muted / Stark im Hintergrund) */
+        .leaflet-tile-pane {
+            filter: grayscale(100%) opacity(0.35) contrast(70%) brightness(110%);
+        }
+
+        /* Tooltip Resets */
+        .leaflet-tooltip,
+        .leaflet-tooltip-pane .leaflet-tooltip {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+        }
+
+        .leaflet-tooltip-pane .leaflet-tooltip::before {
+            display: none !important;
+        }
+
+        /* Städtenamen */
+        .city-label {
+            font-weight: 500;
+            font-size: 11px;
+            color: #222222;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.9), -1px -1px 2px rgba(255, 255, 255, 0.9);
+            white-space: nowrap;
+        }
+
+        .city-label-special {
+            font-weight: 700;
+            font-size: 12px;
+            color: #000000;
+            letter-spacing: 0.2px;
+            text-shadow: 1px 1px 3px #ffffff, -1px -1px 3px #ffffff;
+            white-space: nowrap;
+        }
+
+        /* Imperien-Labels (KURSIV) */
+        .empire-label {
+            font-size: 13px;
+            font-weight: 700;
+            font-style: italic;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.95), -1px -1px 3px rgba(255, 255, 255, 0.95);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* Regionalbeschriftungen (Provinzen & Gouvernements) */
+        .region-label-auto {
+            font-size: 10.5px;
+            font-weight: 600;
+            color: rgba(40, 50, 60, 0.65);
+            text-transform: capitalize;
+            letter-spacing: 0.3px;
+            text-align: center;
+            white-space: nowrap;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.85), -1px -1px 2px rgba(255, 255, 255, 0.85);
+        }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    // 1. Karte initialisieren
+    const map = L.map('map').setView([51.8, 19.5], 6);
+
+    // 2. Panes für klare Ebenensteuerung (Z-Index)
+    map.createPane('empiresPane');
+    map.getPane('empiresPane').style.zIndex = 300;
+
+    map.createPane('bordersPane');
+    map.getPane('bordersPane').style.zIndex = 350;
+
+    map.createPane('citiesPane');
+    map.getPane('citiesPane').style.zIndex = 450;
+
+    map.createPane('specialCitiesPane');
+    map.getPane('specialCitiesPane').style.zIndex = 500;
+
+    // 3. Basemaps
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        attribution: '&copy; CARTO'
+    }).addTo(map);
+
+    L.tileLayer('https://tile.openhistoricalmap.org/mapnik/{z}/{x}/{y}.png?datetime=1900-01-01T00:00:00Z', {
+        maxZoom: 18,
+        minZoom: 3,
+        opacity: 0.85,
+        attribution: '&copy; OpenHistoricalMap'
+    }).addTo(map);
+
+
+    // 4. Hilfsfunktion: Namensauflösung, Lateinisierung & Korrektur von "und"
+    function getLatinName(properties) {
+        if (!properties) return "";
+        let name = properties["name:de"] || properties["name:en"] || properties["name:latin"] || properties.NAME || properties.name || "";
+        
+        if (/[\u0400-\u04FF]/.test(name)) {
+            if (properties["name:en"]) name = properties["name:en"];
+            else if (properties["name:de"]) name = properties["name:de"];
+            else name = name.replace(/Губерния|Guberniya/gi, "Gouvernement").trim();
+        }
+
+        // Korrektur: "Und" zu kleingeschriebenem "und" umwandeln
+        name = name.replace(/\bUnd\b/g, 'und');
+
+        return name;
+    }
+
+
+    // 5. Imperien laden, füllen UND die Staatsgrenzen kräftig nachzeichnen (europa_1900.geojson)
+    fetch('europa_1900.geojson')
+        .then(res => res.json())
+        .then(data => {
+            L.geoJSON(data, {
+                pane: 'empiresPane',
+                style: function(feature) {
+                    const p = feature.properties || {};
+                    const rawName = JSON.stringify(p).toLowerCase();
+
+                    let color = "#34495e";
+
+                    if (rawName.includes("german") || rawName.includes("deutsches") || rawName.includes("preußen") || rawName.includes("prussia")) {
+                        color = "#1e2b37"; 
+                    } else if (rawName.includes("russi") || rawName.includes("russisch")) {
+                        color = "#922b21"; 
+                    } else if (rawName.includes("austr") || rawName.includes("österreich") || rawName.includes("hungary") || rawName.includes("ungarn")) {
+                        color = "#b9770e"; 
+                    }
+
+                    return {
+                        fill: true,
+                        fillColor: color,
+                        fillOpacity: 0.15,
+                        stroke: true,
+                        color: color,
+                        weight: 2.5,
+                        opacity: 0.85
+                    };
+                }
+            }).addTo(map);
+        })
+        .catch(err => console.error("Fehler beim Laden von europa_1900.geojson:", err));
+
+
+    // 6. Provinzen / Gouvernements laden (Admin-1900-geojson.geojson)
+    fetch('Admin-1900-geojson.geojson')
+        .then(res => res.json())
+        .then(data => {
+            L.geoJSON(data, {
+                pane: 'bordersPane',
+                style: {
+                    fill: false,
+                    color: '#4a5568',
+                    weight: 0.9,
+                    opacity: 0.45,
+                    dashArray: '3, 3'
+                },
+                onEachFeature: function(feature, layer) {
+                    const name = getLatinName(feature.properties);
+                    const lowerName = name.toLowerCase();
+                    
+                    // Galizien manuell platzieren, Wolhynien komplett ausschließen
+                    if (name && !lowerName.includes("galizien") && !lowerName.includes("galicia") && !lowerName.includes("wolhynien") && !lowerName.includes("volhyn")) {
+                        layer.bindPopup("<b>" + name + "</b>");
+
+                        if (layer.getBounds) {
+                            L.marker(layer.getBounds().getCenter(), {
+                                pane: 'specialCitiesPane',
+                                icon: L.divIcon({
+                                    className: 'region-label-auto',
+                                    html: name,
+                                    iconSize: [180, 20],
+                                    iconAnchor: [90, 10]
+                                }),
+                                interactive: false
+                            }).addTo(map);
+                        }
+                    }
+                }
+            }).addTo(map);
+
+            // Radom manuell ergänzen
+            L.marker([51.402, 21.147], {
+                pane: 'specialCitiesPane',
+                icon: L.divIcon({
+                    className: 'region-label-auto',
+                    html: 'Gouvernement Radom',
+                    iconSize: [180, 20],
+                    iconAnchor: [90, 10]
+                }),
+                interactive: false
+            }).addTo(map);
+
+            // Königreich Galizien und Lodomerien exakt oberhalb von Lemberg ("und" kleingeschrieben)
+            L.marker([49.95, 24.03], {
+                pane: 'specialCitiesPane',
+                icon: L.divIcon({
+                    className: 'region-label-auto',
+                    html: 'Königreich Galizien und Lodomerien',
+                    iconSize: [260, 20],
+                    iconAnchor: [130, 20]
+                }),
+                interactive: false
+            }).addTo(map);
+        })
+        .catch(err => console.error("Fehler beim Laden von Admin-1900-geojson.geojson:", err));
+
+
+    // 7. Imperien-Hauptbeschriftungen (Kursiv per CSS, Österreich-Ungarn südlich von Krakau)
+    const empires = [
+        { name: "Deutsches Kaiserreich", coords: [51.7, 16.9] },
+        { name: "Russländisches Reich", coords: [51.7, 21.8] },
+        { name: "Österreich-Ungarn", coords: [49.1, 19.9] }
+    ];
+
+    empires.forEach(emp => {
+        L.marker(emp.coords, {
+            pane: 'specialCitiesPane',
+            icon: L.divIcon({
+                className: 'empire-label',
+                html: emp.name,
+                iconSize: [200, 20],
+                iconAnchor: [100, 10]
+            }),
+            interactive: false
+        }).addTo(map);
+    });
+
+
+    // 8. Städteverarbeitung
+    const markerColor = "#2c3e50";
+    const specialCities = ["Posen", "Warschau", "Lemberg"];
+
+    const starIcon = L.divIcon({
+        pane: 'specialCitiesPane',
+        html: `<svg height="18" width="18" viewBox="0 0 24 24">
+                 <polygon points="12,2 15,9 22,9 16,14 18,21 12,17 6,21 8,14 2,9 9,9" 
+                          fill="${markerColor}" stroke="#ffffff" stroke-width="1.5"/>
+               </svg>`,
+        className: '',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+    });
+
+    function addCityToMap(name, lat, lng) {
+        if (specialCities.includes(name)) {
+            L.marker([lat, lng], { icon: starIcon, zIndexOffset: 1000 })
+             .bindTooltip(name, { permanent: true, direction: 'right', offset: [10, 0], className: 'city-label-special' })
+             .addTo(map);
+        } else {
+            L.circleMarker([lat, lng], {
+                pane: 'citiesPane',
+                radius: 3.5,
+                fillColor: markerColor,
+                color: "#ffffff",
+                weight: 1,
+                fillOpacity: 0.9
+            })
+            .bindTooltip(name, { permanent: true, direction: 'right', offset: [6, 0], className: 'city-label' })
+            .addTo(map);
+        }
+    }
+
+    fetch('cities-geo')
+        .then(res => res.text())
+        .then(textData => {
+            try {
+                const geojson = JSON.parse(textData);
+                if (geojson.type || geojson.features) {
+                    L.geoJSON(geojson, {
+                        onEachFeature: (f) => {
+                            if (f.geometry && f.geometry.coordinates) {
+                                addCityToMap(f.properties.name || f.properties.NAME || "Stadt", f.geometry.coordinates[1], f.geometry.coordinates[0]);
+                            }
+                        }
+                    });
+                    return;
+                }
+            } catch (e) {}
+
+            Papa.parse(textData, {
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    results.data.forEach(row => {
+                        let name = 'Stadt', lat = null, lng = null;
+                        Object.keys(row).forEach(k => {
+                            const ck = k.trim().toLowerCase();
+                            if (ck === 'name' || ck === 'stadt') name = row[k].trim();
+                            if (ck === 'lat' || ck === 'latitude') lat = parseFloat(String(row[k]).replace(',', '.'));
+                            if (ck === 'lng' || ck === 'longitude' || ck === 'long') lng = parseFloat(String(row[k]).replace(',', '.'));
+                        });
+                        if (lat && lng && !isNaN(lat) && !isNaN(lng)) addCityToMap(name, lat, lng);
+                    });
+                }
+            });
+        })
+        .catch(err => console.error("Fehler beim Laden der Städte:", err));
+</script>
+
+</body>
+</html><!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Europa um 1900 - OpenHistoricalMap Base</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <!-- PapaParse für CSV-Import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -179,11 +517,19 @@
 
 
     // 6. Provinzen / Gouvernements laden (Admin-1900-geojson.geojson)
+    // 6. Provinzen / Gouvernements laden (Admin-1900-geojson.geojson)
     fetch('Admin-1900-geojson.geojson')
         .then(res => res.json())
         .then(data => {
             L.geoJSON(data, {
                 pane: 'bordersPane',
+                // Filtert Wolhynien samt Grenzen komplett aus der Anzeige
+                filter: function(feature) {
+                    const name = getLatinName(feature.properties).toLowerCase();
+                    const rawProps = JSON.stringify(feature.properties || {}).toLowerCase();
+                    return !name.includes("wolhynien") && !name.includes("volhyn") && 
+                           !rawProps.includes("wolhynien") && !rawProps.includes("volhyn");
+                },
                 style: {
                     fill: false,
                     color: '#4a5568',
@@ -193,9 +539,10 @@
                 },
                 onEachFeature: function(feature, layer) {
                     const name = getLatinName(feature.properties);
+                    const lowerName = name.toLowerCase();
                     
-                    // Galizien nicht automatisch platzieren, sondern manuell oberhalb von Lemberg
-                    if (name && !name.toLowerCase().includes("galizien") && !name.toLowerCase().includes("galicia")) {
+                    // Galizien nicht automatisch platzieren
+                    if (name && !lowerName.includes("galizien") && !lowerName.includes("galicia")) {
                         layer.bindPopup("<b>" + name + "</b>");
 
                         if (layer.getBounds) {
@@ -226,7 +573,7 @@
                 interactive: false
             }).addTo(map);
 
-            // Königreich Galizien und Lodomerien exakt oberhalb von Lemberg platzieren
+            // Königreich Galizien und Lodomerien
             L.marker([49.95, 24.03], {
                 pane: 'specialCitiesPane',
                 icon: L.divIcon({
