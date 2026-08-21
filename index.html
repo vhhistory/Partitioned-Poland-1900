@@ -252,9 +252,9 @@ const map = L.map('map', {
         .catch(err => console.error("Fehler beim Laden von Admin-1900-geojson.geojson:", err));
 
 
-    // 7. Imperien-Hauptbeschriftungen (Österreich-Ungarn südlich von Krakau)
+    // 7. Imperien-Hauptbeschriftungen (Deutsches Kaiserreich weiter nach links verschoben)
     const empires = [
-        { name: "Deutsches Kaiserreich", coords: [51.7, 16.9] },
+        { name: "Deutsches Kaiserreich", coords: [51.7, 13.8] }, // Wert von 16.9 auf 13.8 angepasst (weiter im Westen)
         { name: "Russländisches Reich", coords: [51.7, 21.8] },
         { name: "Österreich-Ungarn", coords: [49.1, 19.9] }
     ];
