@@ -98,7 +98,14 @@
         .empire-label.active-railway-bg {
             text-shadow: 0 0 6px #f4f1ea, 0 0 10px #f4f1ea !important;
         }
-
+            /* Leuchtend weißer Halo für Imperien, sobald die Eisenbahn aktiv ist */
+    #map.railway-active .empire-label {
+        text-shadow: 
+            0 0 6px #ffffff, 
+            0 0 10px #ffffff, 
+            2px 2px 3px #ffffff, 
+           -2px -2px 3px #ffffff !important;
+    }
         /* Regionalbeschriftungen */
         .region-label-auto {
             font-size: 10.5px;
@@ -182,30 +189,26 @@
     L.control.layers(null, { "🚂 Eisenbahnnetz (1900)": railwayLayerGroup }, { collapsed: false }).addTo(map);
 
     map.on('overlayadd', function(e) {
-        if (e.layer === railwayLayerGroup) {
-            // Provinzen & Gouvernements ausblenden
-            if (map.hasLayer(provinceLabelsGroup)) {
-                map.removeLayer(provinceLabelsGroup);
-            }
-            // Halo für Imperien aktivieren
-            document.querySelectorAll('.empire-label').forEach(el => {
-                el.classList.add('active-railway-bg');
-            });
+    if (e.layer === railwayLayerGroup) {
+        // Provinzen & Gouvernements ausblenden
+        if (map.hasLayer(provinceLabelsGroup)) {
+            map.removeLayer(provinceLabelsGroup);
         }
-    });
+        // Marker-Halo über Kartenklasse aktivieren
+        map.getContainer().classList.add('railway-active');
+    }
+});
 
-    map.on('overlayremove', function(e) {
-        if (e.layer === railwayLayerGroup) {
-            // Provinzen & Gouvernements wieder einblenden
-            if (!map.hasLayer(provinceLabelsGroup)) {
-                map.addLayer(provinceLabelsGroup);
-            }
-            // Halo für Imperien entfernen
-            document.querySelectorAll('.empire-label').forEach(el => {
-                el.classList.remove('active-railway-bg');
-            });
+map.on('overlayremove', function(e) {
+    if (e.layer === railwayLayerGroup) {
+        // Provinzen wieder einblenden
+        if (!map.hasLayer(provinceLabelsGroup)) {
+            map.addLayer(provinceLabelsGroup);
         }
-    });
+        // Marker-Halo deaktivieren
+        map.getContainer().classList.remove('railway-active');
+    }
+});
 
     function getLatinName(properties) {
         if (!properties) return "";
