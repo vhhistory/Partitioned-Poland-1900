@@ -295,7 +295,7 @@
         })
         .catch(err => console.error("Fehler bei Admin-1900-geojson.geojson:", err));
 
-    // 6b. Eisenbahnlinien laden (In Rot)
+   // 6b. Eisenbahnlinien laden (Gleis-Optik: Schwarz-Weiß gestrichelt)
     fetch('Eisenbahn-Linien.geojson')
         .then(res => {
             if (!res.ok) throw new Error("HTTP Fehler " + res.status);
@@ -311,25 +311,25 @@
                 }
             } catch(e) {}
 
-            // Untere Ebene: Durchgezogene dunkle Basislinie
+            // 1. Untere Ebene: Dunkle Basislinie
             const baseRailLayer = L.geoJSON(data, {
                 pane: 'railwaysPane',
                 coordsToLatLng: coords => swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]),
                 style: {
                     color: '#1a1a1a',
                     weight: 2.5,
-                    opacity: 0.8
+                    opacity: 0.85
                 }
             });
 
-            // Obere Ebene: Gestrichelte weiße Linie für den "Gleis-Effekt"
+            // 2. Obere Ebene: Gestrichelte weiße Überlagerung ("Gleis-Effekt")
             const dashRailLayer = L.geoJSON(data, {
                 pane: 'railwaysPane',
                 coordsToLatLng: coords => swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]),
                 style: {
                     color: '#ffffff',
                     weight: 1.2,
-                    opacity: 0.9,
+                    opacity: 0.95,
                     dashArray: '3, 4'
                 },
                 onEachFeature: function(feature, layer) {
@@ -340,14 +340,9 @@
                 }
             });
 
-            // Beide Ebenen zusammen in die Eisenbahn-Gruppe legen
+            // Beide Ebenen in die steuerbare Layer-Gruppe einfügen
             railwayLayerGroup.addLayer(baseRailLayer);
             railwayLayerGroup.addLayer(dashRailLayer);
-        })
-        .catch(err => console.error("Fehler beim Laden von Eisenbahn-Linien.geojson:", err));
-
-            // Der steuerbaren Layer-Gruppe hinzufügen
-            railwayLayerGroup.addLayer(railLayer);
         })
         .catch(err => console.error("Fehler beim Laden von Eisenbahn-Linien.geojson:", err));
 
