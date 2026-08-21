@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Europa um 1900 - mit Eisenbahnlinien</title>
+    <title>Europa um 1900 - mit Eisenbahn-Layer Control</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -91,6 +91,16 @@
             pointer-events: none;
             text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.9), -1px -1px 2px rgba(255, 255, 255, 0.9);
         }
+
+        /* Anpassen des Layer-Controls im historischen Design */
+        .leaflet-control-layers {
+            border-radius: 6px !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+            font-size: 12px;
+            font-weight: 600;
+            color: #2c3e50;
+            padding: 4px 8px !important;
+        }
     </style>
 </head>
 <body>
@@ -101,15 +111,15 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // 1. Karte initialisieren mit sanfteren Zoomstufen
+    // 1. Karte initialisieren
     const map = L.map('map', {
-        zoomSnap: 0.25,        // Erlaubt Viertel-Zoomstufen
-        zoomDelta: 0.5,        // Zoom-Schrittweite beim Klicken auf +/-
-        wheelDebounceTime: 40, // Flüssigeres Mausrad-Zoomen
+        zoomSnap: 0.25,
+        zoomDelta: 0.5,
+        wheelDebounceTime: 40,
         wheelPxPerZoomLevel: 120
     }).setView([51.8, 19.5], 6);
 
-    // 2. Panes für klare Ebenensteuerung (Z-Index)
+    // 2. Panes
     map.createPane('empiresPane');
     map.getPane('empiresPane').style.zIndex = 300;
 
@@ -117,13 +127,25 @@
     map.getPane('bordersPane').style.zIndex = 350;
 
     map.createPane('railwaysPane');
-    map.getPane('railwaysPane').style.zIndex = 400; // Eisenbahnlinien über den Grenzen
+    map.getPane('railwaysPane').style.zIndex = 400;
 
     map.createPane('citiesPane');
     map.getPane('citiesPane').style.zIndex = 450;
 
     map.createPane('specialCitiesPane');
     map.getPane('specialCitiesPane').style.zIndex = 500;
+
+    // Layer-Gruppe für optionales Schalten vorbereiten
+    const railwayLayerGroup = L.layerGroup();
+    const overlayMaps = {
+        "🚂 Eisenbahnnetz (1900)": railwayLayerGroup
+    };
+    
+    // Layer-Control oben rechts hinzufügen
+    const layerControl = L.control.layers(null, overlayMaps, { collapsed: false }).addTo(map);
+
+    // Standardmäßig aktivieren (kann durch Entfernen dieser Zeile deaktiviert gestartet werden)
+    railwayLayerGroup.addTo(map);
 
     // 3. Basemaps
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
@@ -138,8 +160,7 @@
         attribution: '&copy; OpenHistoricalMap'
     }).addTo(map);
 
-
-    // 4. Hilfsfunktion: Namensauflösung & Lateinisierung
+    // 4. Hilfsfunktion Name
     function getLatinName(properties) {
         if (!properties) return "";
         let name = properties["name:de"] || properties["name:en"] || properties["name:latin"] || properties.NAME || properties.name || "";
@@ -153,8 +174,7 @@
         return name;
     }
 
-
-    // 5. Imperien laden und Staatsgrenzen zeichnen (europa_1900.geojson)
+    // 5. Imperien (europa_1900.geojson)
     fetch('europa_1900.geojson')
         .then(res => res.json())
         .then(data => {
@@ -165,7 +185,6 @@
                     const rawName = JSON.stringify(p).toLowerCase();
 
                     let color = "#34495e";
-
                     if (rawName.includes("german") || rawName.includes("deutsches") || rawName.includes("preußen") || rawName.includes("prussia")) {
                         color = "#1e2b37"; 
                     } else if (rawName.includes("russi") || rawName.includes("russisch")) {
@@ -186,10 +205,9 @@
                 }
             }).addTo(map);
         })
-        .catch(err => console.error("Fehler beim Laden von europa_1900.geojson:", err));
+        .catch(err => console.error("Fehler bei europa_1900.geojson:", err));
 
-
-    // 6. Provinzen / Gouvernements laden (Admin-1900-geojson.geojson)
+    // 6. Admin (Admin-1900-geojson.geojson) - Wolhynien & Podolien unsichtbar
     fetch('Admin-1900-geojson.geojson')
         .then(res => res.json())
         .then(data => {
@@ -199,7 +217,6 @@
                     const name = getLatinName(feature.properties).toLowerCase();
                     const rawProps = JSON.stringify(feature.properties || {}).toLowerCase();
                     
-                    // Wolhynien UND Podolien samt Grenzen komplett herausfiltern
                     const isWolhynien = name.includes("wolhynien") || name.includes("volhyn") || rawProps.includes("wolhynien") || rawProps.includes("volhyn");
                     const isPodolien = name.includes("podol") || rawProps.includes("podol");
 
@@ -235,7 +252,7 @@
                 }
             }).addTo(map);
 
-            // Radom manuell ergänzen
+            // Radom & Galizien manuell
             L.marker([51.402, 21.147], {
                 pane: 'specialCitiesPane',
                 icon: L.divIcon({
@@ -247,7 +264,6 @@
                 interactive: false
             }).addTo(map);
 
-            // Königreich Galizien und Lodomerien
             L.marker([49.95, 24.03], {
                 pane: 'specialCitiesPane',
                 icon: L.divIcon({
@@ -259,50 +275,51 @@
                 interactive: false
             }).addTo(map);
         })
-        .catch(err => console.error("Fehler beim Laden von Admin-1900-geojson.geojson:", err));
+        .catch(err => console.error("Fehler bei Admin-1900-geojson.geojson:", err));
 
+    // 6b. Eisenbahnlinien laden (Dezentes Design & optionales Layer)
+    fetch('Eisenbahn-Linien.geojson')
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP Fehler " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            let swapCoords = false;
+            try {
+                let sampleCoords = data.features[0].geometry.coordinates;
+                while (Array.isArray(sampleCoords[0])) { sampleCoords = sampleCoords[0]; }
+                if (sampleCoords[0] > 35 && sampleCoords[0] < 70) {
+                    swapCoords = true;
+                }
+            } catch(e) {}
 
-    // 6b. Eisenbahnlinien laden (Prüft beide Schreibweisen)
-    function loadRailways(fileName) {
-        fetch(fileName)
-            .then(res => {
-                if (!res.ok) throw new Error("HTTP Fehler " + res.status);
-                return res.json();
-            })
-            .then(data => {
-                console.log("Eisenbahnen erfolgreich geladen aus:", fileName);
-                L.geoJSON(data, {
-                    pane: 'railwaysPane',
-                    style: {
-                        color: '#1a1a1a',   // Kräftiges Dunkelgrau/Schwarz für gute Sichtbarkeit
-                        weight: 2.2,         // Linienstärke
-                        opacity: 0.85,       // Deckkraft
-                        dashArray: '5, 3'   // Gestrichelte Eisenbahn-Optik
-                    },
-                    onEachFeature: function(feature, layer) {
-                        if (feature.properties && (feature.properties.name || feature.properties.ref)) {
-                            const lineName = feature.properties.name || feature.properties.ref;
-                            layer.bindPopup("<b>Eisenbahnstrecke:</b> " + lineName);
-                        }
+            const railLayer = L.geoJSON(data, {
+                pane: 'railwaysPane',
+                coordsToLatLng: function (coords) {
+                    return swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]);
+                },
+                style: {
+                    color: '#3a4754',   // Dezenteres Dunkelgrau-Blau
+                    weight: 1.2,         // Wesentlich dünner und eleganter
+                    opacity: 0.65,       // Transparenter, um nicht zu stören
+                    dashArray: '4, 3'   // Feines Gestrichelt-Muster
+                },
+                onEachFeature: function(feature, layer) {
+                    if (feature.properties) {
+                        const lineName = feature.properties.name || feature.properties.ref || "Eisenbahnstrecke";
+                        layer.bindPopup("<b>Eisenbahnlinie:</b> " + lineName);
                     }
-                }).addTo(map);
-            })
-            .catch(err => {
-                // Fallback, falls Datei mit Tippfehler anders heißt
-                if (fileName === 'Eisenbahn-Linien.geojson') {
-                    loadRailways('Einsenbahn-Linien.geojson');
-                } else {
-                    console.error("Eisenbahn-GeoJSON konnte nicht geladen werden:", err);
                 }
             });
-    }
 
-    loadRailways('Eisenbahn-Linien.geojson');
+            // Der steuerbaren Layer-Gruppe hinzufügen
+            railwayLayerGroup.addLayer(railLayer);
+        })
+        .catch(err => console.error("Fehler beim Laden von Eisenbahn-Linien.geojson:", err));
 
-
-    // 7. Imperien-Hauptbeschriftungen (Deutsches Kaiserreich weiter links auf 13.8)
+    // 7. Imperien-Labels
     const empires = [
-        { name: "Deutsches Kaiserreich", coords: [51.7, 13.8] },
+        { name: "Deutsches Kaiserreich", coords: [51.7, 15.8] },
         { name: "Russländisches Reich", coords: [51.7, 21.8] },
         { name: "Österreich-Ungarn", coords: [49.1, 19.9] }
     ];
@@ -320,8 +337,7 @@
         }).addTo(map);
     });
 
-
-    // 8. Städteverarbeitung
+    // 8. Städte
     const markerColor = "#2c3e50";
     const specialCities = ["Posen", "Warschau", "Lemberg"];
 
