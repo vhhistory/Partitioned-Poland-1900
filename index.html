@@ -193,28 +193,33 @@
         const fetchUngarn    = fetch('Ungarn.json').then(r => r.json());
         const fetchAdmin     = fetch('Admin-1900-geojson.geojson').then(r => r.json());
 
-        Promise.all([
+       Promise.all([
             fetchEurope, fetchGermany, fetchAustria, fetchRussia,
             fetchBoehmen, fetchMaehren, fetchSchlesien, fetchUngarn, fetchAdmin
         ])
         .then(([europeData, germanyData, austriaData, russiaData, boehmenData, maehrenData, schlesienData, ungarnData, adminData]) => {
 
-            // A. Europa-Karte laden, ABER die 3 Reiche ausfiltern
+            // Exakte Namen aus deiner europa_1900.geojson
+            const excludedEmpires = [
+                "Germany (Prussia)",
+                "Austria-Hungary",
+                "Russia (Soviet Union)"
+            ];
+
+            // A. Europa-Karte laden (ohne die drei Imperien)
             if (europeData) {
                 L.geoJSON(europeData, {
                     pane: 'empiresPane',
                     filter: function(feature) {
-                        const name = (feature.properties && (feature.properties.NAME || feature.properties.name || "")).toLowerCase();
-                        // Filtert Deutsches Reich, Österreich-Ungarn und Russland heraus
-                        return !name.includes("german") && !name.includes("deutsch") &&
-                               !name.includes("austria") && !name.includes("österreich") &&
-                               !name.includes("russia") && !name.includes("russland");
+                        if (!feature.properties) return true;
+                        const cName = feature.properties.country_name;
+                        return !excludedEmpires.includes(cName);
                     },
                     style: { fill: true, fillColor: '#dcd6cd', fillOpacity: 0.12, stroke: true, color: '#7f8c8d', weight: 1 }
                 }).addTo(map);
             }
 
-            // B. Die 3 Großreiche laden
+            // B. Die 3 Großreiche mit eigenen Shapefiles/Farben laden
             L.geoJSON(germanyData, {
                 pane: 'empiresPane',
                 style: { fill: true, fillColor: '#1e2b37', fillOpacity: 0.18, stroke: true, color: '#1e2b37', weight: 2 }
