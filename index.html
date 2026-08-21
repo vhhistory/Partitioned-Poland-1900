@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Europa um 1900 - Transparente Hintergründe</title>
+    <title>Europa um 1900</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -49,11 +49,11 @@
             display: none !important;
         }
 
-        /* Base Label Styles mit sanften Übergängen für den Hintergrund */
+        /* Base Label Styles */
         .city-label, 
         .city-label-special, 
         .empire-label {
-            transition: background-color 0.2s ease, padding 0.2s ease, border-radius 0.2s ease;
+            transition: text-shadow 0.2s ease;
             white-space: nowrap;
         }
 
@@ -80,12 +80,12 @@
             font-style: italic;
             letter-spacing: 2.5px;
             text-transform: uppercase;
+            color: #2c3e50;
             text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.95), -1px -1px 3px rgba(255, 255, 255, 0.95);
             pointer-events: none;
         }
 
-        /* Dynamischer weißer halbtransparenter Hintergrund (wird bei aktivierten Eisenbahnen zugeschaltet) */
-       /* Starker weißer Text-Halo bei aktiviertem Eisenbahn-Netz */
+        /* Starker weißer Text-Halo bei aktiviertem Eisenbahn-Netz */
         .city-label.active-railway-bg {
             text-shadow: 
                 0 0 4px #ffffff, 0 0 4px #ffffff,
@@ -106,6 +106,7 @@
                 2px 2px 4px #ffffff, -2px -2px 4px #ffffff,
                 2px -2px 4px #ffffff, -2px 2px 4px #ffffff !important;
         }
+
         /* Regionalbeschriftungen (Provinzen & Gouvernements) */
         .region-label-auto {
             font-size: 10.5px;
@@ -173,12 +174,13 @@
     // Layer-Control oben rechts hinzufügen
     const layerControl = L.control.layers(null, overlayMaps, { collapsed: false }).addTo(map);
 
-    // Events zum Umschalten: Provinznamen ausblenden & Weiße Felder um Städte/Imperien aktivieren
+    // Events zum Umschalten
     map.on('overlayadd', function(e) {
         if (e.layer === railwayLayerGroup) {
             map.removeLayer(provinceLabelsGroup);
             document.body.classList.add('railways-active');
             toggleLabelBackgrounds(true);
+            updateEmpirePositions(true); // Imperien-Positionen anpassen
         }
     });
 
@@ -187,10 +189,11 @@
             map.addLayer(provinceLabelsGroup);
             document.body.classList.remove('railways-active');
             toggleLabelBackgrounds(false);
+            updateEmpirePositions(false); // Zurück zur Standardposition
         }
     });
 
-    // Hilfsfunktion zum Ein-/Ausschalten der verstärkten Kontur
+    // Hilfsfunktion zum Ein-/Ausschalten der verstärkten Schattierung
     function toggleLabelBackgrounds(enable) {
         const labels = document.querySelectorAll('.city-label, .city-label-special, .empire-label');
         labels.forEach(label => {
@@ -215,16 +218,18 @@
         attribution: '&copy; OpenHistoricalMap'
     }).addTo(map);
 
-    // 4. Hilfsfunktion Name
+    // 4. Hilfsfunktion Name (Kürzt "Gouvernement" zu "Gouv.")
     function getLatinName(properties) {
         if (!properties) return "";
         let name = properties["name:de"] || properties["name:en"] || properties["name:latin"] || properties.NAME || properties.name || "";
         
         if (/[\u0400-\u04FF]/.test(name)) {
-            if (properties["name:en"]) name = properties["name:en"];
-            else if (properties["name:de"]) name = properties["name:de"];
-            else name = name.replace(/Губерния|Guberniya/gi, "Gouvernement").trim();
+            if (properties["name:de"]) name = properties["name:de"];
+            else if (properties["name:en"]) name = properties["name:en"];
         }
+
+        // "Gouvernement" und Varianten durch "Gouv." ersetzen
+        name = name.replace(/Gouvernement|Guberniya|Губерния/gi, "Gouv.").trim();
 
         return name;
     }
@@ -262,7 +267,7 @@
         })
         .catch(err => console.error("Fehler bei europa_1900.geojson:", err));
 
-   // 6. Admin (Admin-1900-geojson.geojson)
+    // 6. Admin (Admin-1900-geojson.geojson)
     fetch('Admin-1900-geojson.geojson')
         .then(res => res.json())
         .then(data => {
@@ -274,10 +279,13 @@
                     
                     const isWolhynien = name.includes("wolhynien") || name.includes("volhyn") || rawProps.includes("wolhynien") || rawProps.includes("volhyn");
                     const isPodolien = name.includes("podol") || rawProps.includes("podol");
-                    // Suwalki / Suwałki herausfiltern
-                    const isSuwalki = name.includes("suwalki") || name.includes("suwałki") || name.includes("suvalki") || rawProps.includes("suwalki") || rawProps.includes("suwałki");
+                    
+                    // Suwalki, Kowno und Kurland blockieren
+                    const isSuwalki = name.includes("suwalki") || name.includes("suwałki") || name.includes("suvalki") || rawProps.includes("suwalki");
+                    const isKowno = name.includes("kowno") || name.includes("kovno") || name.includes("kaunas") || rawProps.includes("kovno") || rawProps.includes("kowno");
+                    const isKurland = name.includes("kurland") || name.includes("courland") || name.includes("kurzemes") || rawProps.includes("kurland") || rawProps.includes("courland");
 
-                    return !isWolhynien && !isPodolien && !isSuwalki;
+                    return !isWolhynien && !isPodolien && !isSuwalki && !isKowno && !isKurland;
                 },
                 style: {
                     fill: false,
@@ -315,7 +323,7 @@
                 pane: 'specialCitiesPane',
                 icon: L.divIcon({
                     className: 'region-label-auto',
-                    html: 'Gouvernement Radom',
+                    html: 'Gouv. Radom',
                     iconSize: [180, 20],
                     iconAnchor: [90, 10]
                 }),
@@ -388,25 +396,49 @@
         })
         .catch(err => console.error("Fehler beim Laden von Eisenbahn-Linien.geojson:", err));
 
-    // 7. Imperien-Labels
-    const empires = [
-        { name: "Deutsches Kaiserreich", coords: [51.7, 16.4] },
-        { name: "Russländisches Reich", coords: [51.7, 21.8] },
-        { name: "Österreich-Ungarn", coords: [49.5, 19.9] }
+    // 7. Imperien-Labels mit dynamischen Koordinaten
+    const empireData = [
+        { 
+            name: "Deutsches Kaiserreich", 
+            defaultCoords: [51.7, 16.4], 
+            railCoords: [51.7, 14.5] // Etwas weiter links
+        },
+        { 
+            name: "Russländisches Reich", 
+            defaultCoords: [51.7, 21.8], 
+            railCoords: [51.7, 24.2] // Rechts von Warschau
+        },
+        { 
+            name: "Österreich-Ungarn", 
+            defaultCoords: [49.5, 19.9], 
+            railCoords: [49.5, 19.9] 
+        }
     ];
 
-    empires.forEach(emp => {
-        L.marker(emp.coords, {
+    const empireMarkers = [];
+
+    empireData.forEach(emp => {
+        const marker = L.marker(emp.defaultCoords, {
             pane: 'specialCitiesPane',
             icon: L.divIcon({
                 className: 'empire-label',
                 html: emp.name,
-                iconSize: [200, 20],
-                iconAnchor: [100, 10]
+                iconSize: [220, 20],
+                iconAnchor: [110, 10]
             }),
             interactive: false
         }).addTo(map);
+        
+        empireMarkers.push({ marker, data: emp });
     });
+
+    // Hilfsfunktion zum Verschieben der Imperien-Labels
+    function updateEmpirePositions(isRailwayActive) {
+        empireMarkers.forEach(item => {
+            const newCoords = isRailwayActive ? item.data.railCoords : item.data.defaultCoords;
+            item.marker.setLatLng(newCoords);
+        });
+    }
 
     // 8. Städte
     const markerColor = "#2c3e50";
