@@ -71,17 +71,19 @@
             white-space: nowrap;
         }
         /* Stil für Gouvernement- und Provinzbeschriftungen */
-.region-label {
+.region-label-auto {
     font-family: 'Georgia', 'Times New Roman', serif;
     font-size: 11px;
     font-weight: bold;
     font-style: italic;
-    color: #4a2c2c; /* Dunkles Historisches Rot/Braun */
-    letter-spacing: 0.8px;
+    color: #2c3e50;
     text-transform: uppercase;
-    text-shadow: 1px 1px 2px #ffffff, -1px -1px 2px #ffffff, 1px -1px 2px #ffffff, -1px 1px 2px #ffffff;
-    pointer-events: none; /* Verhindert das Blockieren von Klicks auf der Karte */
+    letter-spacing: 0.8px;
+    text-align: center;
     white-space: nowrap;
+    pointer-events: none;
+    text-shadow: 2px 0 0 #fff, -2px 0 0 #fff, 0 2px 0 #fff, 0 -2px 0 #fff,
+                 1px 1px #fff, -1px -1px #fff, 1px -1px #fff, -1px 1px #fff;
 }
     </style>
 </head>
@@ -108,9 +110,10 @@
 
     // 3. OpenHistoricalMap (OHM) Tile-Layer als echtes Fundament (1900)
    // 3a. Helle Hintergrundkarte als Fallback (damit nie ein blauer/leerer Bildschirm erscheint)
+// Basemap ohne störende moderne Grenzen/Labels
 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
     maxZoom: 19,
-    opacity: 1.0
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a>'
 }).addTo(map);
 
 // 3b. OpenHistoricalMap (OHM) Hauptkarte für das Jahr 1900
@@ -136,50 +139,61 @@ L.marker([51.402, 21.147], {
     // 4. Eigene GeoJSON-Grenzen (Optional – nur als dezent hervorgehobener Umriss)
     // GeoJSON aus GitHub laden & Radom ergänzen
 fetch('Admin-1900-geojson.geojson')
-    .then(response => {
-        if (!response.ok) throw new Error("Datei konnte nicht geladen werden.");
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
         L.geoJSON(data, {
             pane: 'bordersPane',
             style: function(feature) {
-                const name = (feature.properties && feature.properties.name) ? feature.properties.name : "";
-                let color = "#bdc3c7";
-
-                if (name.includes("Provinz")) color = "#2c3e50";         // Preußen (Dunkelblau/Grau)
-                else if (name.includes("Gouvernement")) color = "#c0392b"; // Russland (Rot)
-                else color = "#f39c12";                                  // Österreich-Ungarn (Gold)
-
+                // Keine Füllung, nur saubere gestrichelte Grenzlinien
                 return {
-                    fillColor: color,
-                    fillOpacity: 0.2,
-                    color: color,
-                    weight: 1.5,
-                    dashArray: '3, 3'
+                    fill: false,
+                    fillOpacity: 0,
+                    color: '#4a3c31',   // Historisches Dunkelbraun/Grau
+                    weight: 1.8,
+                    dashArray: '5, 4'
                 };
             },
             onEachFeature: function(feature, layer) {
-                if (feature.properties && feature.properties.name) {
-                    layer.bindPopup("<b>" + feature.properties.name + "</b>");
+                const name = feature.properties && feature.properties.name ? feature.properties.name : "";
+                
+                if (name) {
+                    // Popup beim Anklicken der Grenze
+                    layer.bindPopup("<b>" + name + "</b>");
+
+                    // Berechnet das geometrische Zentrum der Region für die Beschriftung
+                    // HINWEIS: Funktioniert bei Polygonen/MultiPolygonen
+                    if (layer.getBounds) {
+                        const center = layer.getBounds().getCenter();
+
+                        L.marker(center, {
+                            pane: 'specialCitiesPane',
+                            icon: L.divIcon({
+                                className: 'region-label-auto',
+                                html: name,
+                                iconSize: [180, 20],
+                                iconAnchor: [90, 10]
+                            }),
+                            interactive: false
+                        }).addTo(map);
+                    }
                 }
             }
         }).addTo(map);
 
-        // Nach dem Laden der Grenzen wird das Label für Radom ergänzt
+        // Manuelles Label für Radom (da in der GeoJSON fehlend)
         L.marker([51.402, 21.147], {
             pane: 'specialCitiesPane',
             icon: L.divIcon({
-                className: 'region-label',
+                className: 'region-label-auto',
                 html: 'Gouvernement Radom',
-                iconSize: [160, 20],
-                iconAnchor: [80, 10]
+                iconSize: [180, 20],
+                iconAnchor: [90, 10]
             }),
             interactive: false
         }).addTo(map);
 
     })
-    .catch(err => console.error("Fehler beim Laden von Admin-1900-geojson.geojson:", err));
+    .catch(err => console.error("Fehler beim Laden:", err));
 
     // 5. Imperien-Labels an den gewünschten Positionen
     const empires = [
