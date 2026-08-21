@@ -193,19 +193,40 @@
         const fetchUngarn    = fetch('Ungarn.json').then(r => r.json());
         const fetchAdmin     = fetch('Admin-1900-geojson.geojson').then(r => r.json());
 
-       Promise.all([
+      // 1. Manuell platzierbare Regionen-Labels (Koordinaten hier anpassen!)
+        const regionData = [
+            { name: "Provinz Posen", coords: [52.32, 17.20], className: 'region-label-auto' },
+            { name: "Provinz Schlesien", coords: [51.10, 17.03], className: 'region-label-auto' },
+            { name: "Königreich Galizien und Lodomerien", coords: [49.80, 23.50], className: 'region-label-auto' },
+            { name: "Königreich Polen", coords: [52.40, 20.80], className: 'region-label-poland' }
+        ];
+
+        regionData.forEach(reg => {
+            provinceLabelsGroup.addLayer(L.marker(reg.coords, {
+                pane: 'specialCitiesPane',
+                icon: L.divIcon({
+                    className: reg.className,
+                    html: reg.name,
+                    iconSize: [220, 25],
+                    iconAnchor: [110, 12]
+                }),
+                interactive: false
+            }));
+        });
+
+        // 2. Data-Fetches & Render-Logik
+        const excludedEmpires = [
+            "Germany (Prussia)",
+            "Austria-Hungary",
+            "Russia (Soviet Union)"
+        ];
+
+        Promise.all([
             fetchEurope, fetchGermany, fetchAustria, fetchRussia,
             fetchBoehmen, fetchMaehren, fetchSchlesien, fetchUngarn, fetchAdmin
         ])
         .then(([europeData, germanyData, austriaData, russiaData, boehmenData, maehrenData, schlesienData, ungarnData, adminData]) => {
-
-            // Exakte Namen aus deiner europa_1900.geojson
-            const excludedEmpires = [
-                "Germany (Prussia)",
-                "Austria-Hungary",
-                "Russia (Soviet Union)"
-            ];
-
+            
             // A. Europa-Karte laden (ohne die drei Imperien)
             if (europeData) {
                 L.geoJSON(europeData, {
@@ -263,6 +284,11 @@
                                         rawProps.includes("lublin") || rawProps.includes("lomza") || 
                                         rawProps.includes("radom") || rawProps.includes("siedlce") || 
                                         rawProps.includes("piotrkow") || rawProps.includes("plock");
+                    // Auch Posen, Schlesien & Galizien aus der Automatikerzeugung ausschließen
+                    const isManualLabel = rawProps.includes("posen") || 
+                                          rawProps.includes("schlesien") || 
+                                          rawProps.includes("galizien") || 
+                                          rawProps.includes("galicia");
 
                     if (!isPolishGov && name) {
                         if (layer.getBounds) {
