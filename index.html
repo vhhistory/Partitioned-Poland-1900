@@ -198,9 +198,12 @@
                 filter: function(feature) {
                     const name = getLatinName(feature.properties).toLowerCase();
                     const rawProps = JSON.stringify(feature.properties || {}).toLowerCase();
-                    // Wolhynien samt Grenzen komplett filtern
-                    return !name.includes("wolhynien") && !name.includes("volhyn") && 
-                           !rawProps.includes("wolhynien") && !rawProps.includes("volhyn");
+                    
+                    // Wolhynien UND Podolien samt Grenzen komplett herausfiltern
+                    const isWolhynien = name.includes("wolhynien") || name.includes("volhyn") || rawProps.includes("wolhynien") || rawProps.includes("volhyn");
+                    const isPodolien = name.includes("podol") || rawProps.includes("podol");
+
+                    return !isWolhynien && !isPodolien;
                 },
                 style: {
                     fill: false,
@@ -259,32 +262,47 @@
         .catch(err => console.error("Fehler beim Laden von Admin-1900-geojson.geojson:", err));
 
 
-    // NEW: 6b. Eisenbahnlinien laden (Einsenbahn-Linien.geojson)
-    fetch('Einsenbahn-Linien.geojson')
-        .then(res => res.json())
-        .then(data => {
-            L.geoJSON(data, {
-                pane: 'railwaysPane',
-                style: {
-                    color: '#2b2b2b',   // Dunkelgrauer / fast schwarzer Farbton für Gleise
-                    weight: 1.8,         // Linienstärke
-                    opacity: 0.8,       // Deckkraft
-                    dashArray: '6, 4'   // Gestrichelte Optik (wie Eisenbahnen auf historischen Karten)
-                },
-                onEachFeature: function(feature, layer) {
-                    if (feature.properties && (feature.properties.name || feature.properties.ref)) {
-                        const lineName = feature.properties.name || feature.properties.ref;
-                        layer.bindPopup("<b>Eisenbahnstrecke:</b> " + lineName);
+    // 6b. Eisenbahnlinien laden (Prüft beide Schreibweisen)
+    function loadRailways(fileName) {
+        fetch(fileName)
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP Fehler " + res.status);
+                return res.json();
+            })
+            .then(data => {
+                console.log("Eisenbahnen erfolgreich geladen aus:", fileName);
+                L.geoJSON(data, {
+                    pane: 'railwaysPane',
+                    style: {
+                        color: '#1a1a1a',   // Kräftiges Dunkelgrau/Schwarz für gute Sichtbarkeit
+                        weight: 2.2,         // Linienstärke
+                        opacity: 0.85,       // Deckkraft
+                        dashArray: '5, 3'   // Gestrichelte Eisenbahn-Optik
+                    },
+                    onEachFeature: function(feature, layer) {
+                        if (feature.properties && (feature.properties.name || feature.properties.ref)) {
+                            const lineName = feature.properties.name || feature.properties.ref;
+                            layer.bindPopup("<b>Eisenbahnstrecke:</b> " + lineName);
+                        }
                     }
+                }).addTo(map);
+            })
+            .catch(err => {
+                // Fallback, falls Datei mit Tippfehler anders heißt
+                if (fileName === 'Eisenbahn-Linien.geojson') {
+                    loadRailways('Einsenbahn-Linien.geojson');
+                } else {
+                    console.error("Eisenbahn-GeoJSON konnte nicht geladen werden:", err);
                 }
-            }).addTo(map);
-        })
-        .catch(err => console.error("Fehler beim Laden von Einsenbahn-Linien.geojson:", err));
+            });
+    }
+
+    loadRailways('Eisenbahn-Linien.geojson');
 
 
     // 7. Imperien-Hauptbeschriftungen (Deutsches Kaiserreich weiter links auf 13.8)
     const empires = [
-        { name: "Deutsches Kaiserreich", coords: [51.7, 15.8] },
+        { name: "Deutsches Kaiserreich", coords: [51.7, 13.8] },
         { name: "Russländisches Reich", coords: [51.7, 21.8] },
         { name: "Österreich-Ungarn", coords: [49.1, 19.9] }
     ];
