@@ -134,7 +134,7 @@
     }
 
 
-    // 5. Imperien laden & dynamisch farblich füllen (europa_1900.geojson)
+    // 5. Imperien laden, füllen UND die Staatsgrenzen kräftig nachzeichnen (europa_1900.geojson)
     fetch('europa_1900.geojson')
         .then(res => res.json())
         .then(data => {
@@ -142,26 +142,27 @@
                 pane: 'empiresPane',
                 style: function(feature) {
                     const p = feature.properties || {};
-                    // Großzügige Eigenschaftsprüfung für verschiedene GeoJSON-Standards
-                    const rawName = (p.NAME || p.name || p.ADMIN || p.SOVEREIGNT || p["name:de"] || p["name:en"] || "").toLowerCase();
+                    // Liest alle gängigen GeoJSON-Eigenschaften aus
+                    const rawName = JSON.stringify(p).toLowerCase();
 
-                    let fillColor = "transparent";
+                    let color = "#34495e"; // Dunkler Standard-Border
 
                     if (rawName.includes("german") || rawName.includes("deutsches") || rawName.includes("preußen") || rawName.includes("prussia")) {
-                        fillColor = "#2c3e50"; // Preußen / Deutsches Reich (Blau-Grau)
+                        color = "#1e2b37"; // Preußen / Deutsches Reich (Dunkles Blau-Grau)
                     } else if (rawName.includes("russi") || rawName.includes("russisch")) {
-                        fillColor = "#c0392b"; // Russisches Reich (Sanftes Rot)
+                        color = "#922b21"; // Russisches Reich (Sattes Dunkelrot)
                     } else if (rawName.includes("austr") || rawName.includes("österreich") || rawName.includes("hungary") || rawName.includes("ungarn")) {
-                        fillColor = "#d68910"; // Österreich-Ungarn (Ocker-Gelb)
+                        color = "#b9770e"; // Österreich-Ungarn (Dunkles Ocker)
                     }
 
                     return {
-                        fill: (fillColor !== "transparent"),
-                        fillColor: fillColor,
-                        fillOpacity: 0.12,     // Hauchdünne Flächenfärbung
-                        color: fillColor,
-                        weight: 1.5,
-                        opacity: 0.6
+                        fill: true,
+                        fillColor: color,
+                        fillOpacity: 0.15,   // Leichtes, klares Einfärben der Reichsflächen
+                        stroke: true,        // Macht die Staatsgrenze explizit sichtbar
+                        color: color,        // Linienfarbe der Imperiengrenze
+                        weight: 2.5,         // Deutlich sichtbare Grenzlinie
+                        opacity: 0.85        // Kaum Transparenz für die Außengrenzen
                     };
                 }
             }).addTo(map);
