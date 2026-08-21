@@ -94,12 +94,19 @@
     map.getPane('specialCitiesPane').style.zIndex = 500;
 
     // 3. OpenHistoricalMap (OHM) Tile-Layer als echtes Fundament (1900)
-    L.tileLayer('https://tile.openhistoricalmap.org/historical/{z}/{x}/{y}.png?datetime=1900-01-01T00:00:00Z', {
-        maxZoom: 18,
-        minZoom: 3,
-        opacity: 1.0,
-        attribution: '&copy; <a href="https://www.openhistoricalmap.org/">OpenHistoricalMap</a> contributors'
-    }).addTo(map);
+   // 3a. Helle Hintergrundkarte als Fallback (damit nie ein blauer/leerer Bildschirm erscheint)
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    opacity: 1.0
+}).addTo(map);
+
+// 3b. OpenHistoricalMap (OHM) Hauptkarte für das Jahr 1900
+L.tileLayer('https://tile.openhistoricalmap.org/mapnik/{z}/{x}/{y}.png?datetime=1900-01-01T00:00:00Z', {
+    maxZoom: 18,
+    minZoom: 3,
+    opacity: 1.0,
+    attribution: '&copy; <a href="https://www.openhistoricalmap.org/">OpenHistoricalMap</a> contributors'
+}).addTo(map);
 
     // 4. Eigene GeoJSON-Grenzen (Optional – nur als dezent hervorgehobener Umriss)
     fetch('europa_1900.geojson')
