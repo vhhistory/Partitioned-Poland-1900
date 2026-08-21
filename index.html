@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Europa um 1900 - OpenHistoricalMap Base</title>
+    <title>Europa um 1900 - mit Eisenbahnlinien</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -26,9 +26,14 @@
             background-color: #f4f1ea;
         }
 
-        /* Basemap stummschalten (Ausschließlich auf die Kachelebene angewendet) */
+        /* Basemap stummschalten */
         .leaflet-tile-container {
             filter: grayscale(100%) opacity(0.35) contrast(70%) brightness(110%);
+        }
+
+        /* Sanfte Kachelübergänge beim Zoomen */
+        .leaflet-tile {
+            transition: opacity 0.2s linear;
         }
 
         /* Tooltip Resets */
@@ -79,7 +84,7 @@
             font-size: 10.5px;
             font-weight: 600;
             color: rgba(40, 50, 60, 0.75);
-            text-transform: none; /* Deaktiviert automatisches Erzwingen von Großbuchstaben */
+            text-transform: none;
             letter-spacing: 0.3px;
             text-align: center;
             white-space: nowrap;
@@ -96,14 +101,13 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-
     // 1. Karte initialisieren mit sanfteren Zoomstufen
-const map = L.map('map', {
-    zoomSnap: 0.25,        // Erlaubt Viertel-Zoomstufen (z.B. 6.25, 6.5, 6.75)
-    zoomDelta: 0.5,        // Zoom-Schrittweite beim Klicken auf +/-
-    wheelDebounceTime: 40, // Reagiert feinfühliger und flüssiger auf das Mausrad
-    wheelPxPerZoomLevel: 120 // Wie viel Mausrad-Mouvement für eine Zoomstufe nötig ist (höher = sanfter)
-}).setView([51.8, 19.5], 6);
+    const map = L.map('map', {
+        zoomSnap: 0.25,        // Erlaubt Viertel-Zoomstufen
+        zoomDelta: 0.5,        // Zoom-Schrittweite beim Klicken auf +/-
+        wheelDebounceTime: 40, // Flüssigeres Mausrad-Zoomen
+        wheelPxPerZoomLevel: 120
+    }).setView([51.8, 19.5], 6);
 
     // 2. Panes für klare Ebenensteuerung (Z-Index)
     map.createPane('empiresPane');
@@ -111,6 +115,9 @@ const map = L.map('map', {
 
     map.createPane('bordersPane');
     map.getPane('bordersPane').style.zIndex = 350;
+
+    map.createPane('railwaysPane');
+    map.getPane('railwaysPane').style.zIndex = 400; // Eisenbahnlinien über den Grenzen
 
     map.createPane('citiesPane');
     map.getPane('citiesPane').style.zIndex = 450;
@@ -147,7 +154,7 @@ const map = L.map('map', {
     }
 
 
-    // 5. Imperien laden, füllen UND die Staatsgrenzen kräftig nachzeichnen (europa_1900.geojson)
+    // 5. Imperien laden und Staatsgrenzen zeichnen (europa_1900.geojson)
     fetch('europa_1900.geojson')
         .then(res => res.json())
         .then(data => {
@@ -237,7 +244,7 @@ const map = L.map('map', {
                 interactive: false
             }).addTo(map);
 
-            // Königreich Galizien und Lodomerien ("und" exakt klein erzwungen)
+            // Königreich Galizien und Lodomerien
             L.marker([49.95, 24.03], {
                 pane: 'specialCitiesPane',
                 icon: L.divIcon({
@@ -252,9 +259,32 @@ const map = L.map('map', {
         .catch(err => console.error("Fehler beim Laden von Admin-1900-geojson.geojson:", err));
 
 
-    // 7. Imperien-Hauptbeschriftungen (Deutsches Kaiserreich weiter nach links verschoben)
+    // NEW: 6b. Eisenbahnlinien laden (Einsenbahn-Linien.geojson)
+    fetch('Einsenbahn-Linien.geojson')
+        .then(res => res.json())
+        .then(data => {
+            L.geoJSON(data, {
+                pane: 'railwaysPane',
+                style: {
+                    color: '#2b2b2b',   // Dunkelgrauer / fast schwarzer Farbton für Gleise
+                    weight: 1.8,         // Linienstärke
+                    opacity: 0.8,       // Deckkraft
+                    dashArray: '6, 4'   // Gestrichelte Optik (wie Eisenbahnen auf historischen Karten)
+                },
+                onEachFeature: function(feature, layer) {
+                    if (feature.properties && (feature.properties.name || feature.properties.ref)) {
+                        const lineName = feature.properties.name || feature.properties.ref;
+                        layer.bindPopup("<b>Eisenbahnstrecke:</b> " + lineName);
+                    }
+                }
+            }).addTo(map);
+        })
+        .catch(err => console.error("Fehler beim Laden von Einsenbahn-Linien.geojson:", err));
+
+
+    // 7. Imperien-Hauptbeschriftungen (Deutsches Kaiserreich weiter links auf 13.8)
     const empires = [
-        { name: "Deutsches Kaiserreich", coords: [51.7, 15.8] }, // Wert von 16.9 auf 13.8 angepasst (weiter im Westen)
+        { name: "Deutsches Kaiserreich", coords: [51.7, 15.8] },
         { name: "Russländisches Reich", coords: [51.7, 21.8] },
         { name: "Österreich-Ungarn", coords: [49.1, 19.9] }
     ];
