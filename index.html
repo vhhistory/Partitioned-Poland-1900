@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Europa um 1900</title>
+    <title>Europa um 1900 - Fokusstädte Gold</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -23,7 +23,7 @@
             background: #aadaff;
         }
 
-        /* Styling der Stadt-Labels */
+        /* Styling der normalen Stadt-Labels */
         .city-label {
             background: rgba(255, 255, 255, 0.85);
             border: 1px solid #7f8c8d;
@@ -36,15 +36,15 @@
             white-space: nowrap;
         }
 
-        /* Hervorgehobene Städte (Posen, Warschau, Lemberg) */
+        /* Hervorgehobene Städte-Labels (Fokus: Posen, Warschau, Lemberg) */
         .city-label-special {
             background: #ffffff;
-            border: 1.5px solid #800000;
+            border: 1.5px solid #2980b9; /* Dunkelblau, passend zur Umrandung */
             border-radius: 4px;
             padding: 2px 6px;
             font-size: 12px;
             font-weight: bold;
-            color: #800000;
+            color: #2980b9;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             white-space: nowrap;
         }
@@ -97,7 +97,7 @@
 
 <div class="map-title-box">
     <h1>Europa um 1900</h1>
-    <h2>Historische Grenzen und ausgewählte Städtelokalisierungen</h2>
+    <h2>Historische Grenzen und ausgewählte Städtelokalisierungen (Goldene Fokuspunkte)</h2>
 </div>
 
 <div id="map"></div>
@@ -128,7 +128,7 @@
                         fillColor: '#f5eecb', // Pergamentton
                         weight: 1.2,
                         opacity: 1,
-                        color: '#4a3b32',     # Dunkles Sepia für Grenzen
+                        color: '#4a3b32',     // Dunkles Sepia für Grenzen
                         fillOpacity: 0.85
                     };
                 }
@@ -155,13 +155,14 @@
         }).addTo(map);
     });
 
-    // 4. Custom Icon für hervorgehobene Städte (Roter Stern SVG)
-    const starIcon = L.divIcon({
+    // 4. Custom Icon für hervorgehobene Städte (Goldener Stern mit blauer Umrandung)
+    // Wir nutzen hier direkt SVG im HTML, das lässt sich leicht anpassen.
+    const goldenStarIcon = L.divIcon({
         html: `<svg height="22" width="22" viewBox="0 0 24 24" style="filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.4));">
                  <polygon points="12,2 15,9 22,9 16,14 18,21 12,17 6,21 8,14 2,9 9,9" 
-                          fill="#d9534f" stroke="#800000" stroke-width="1.5"/>
+                          fill="#f1c40f" stroke="#2980b9" stroke-width="1.8"/>
                </svg>`,
-        className: '',
+        className: '', // Klasse leer lassen, da wir SVG nutzen
         iconSize: [22, 22],
         iconAnchor: [11, 11]
     });
@@ -179,13 +180,13 @@
                     const isSpecial = specialCities.includes(cityName);
 
                     if (isSpecial) {
-                        // Hervorgehobene Stadt als Stern
-                        const marker = L.marker(latlng, { icon: starIcon, zIndexOffset: 1000 });
+                        // Hervorgehobene Stadt als GOLDENER Stern
+                        const marker = L.marker(latlng, { icon: goldenStarIcon, zIndexOffset: 1000 });
                         marker.bindTooltip(cityName, {
                             permanent: true,
                             direction: 'right',
                             offset: [10, 0],
-                            className: 'city-label-special'
+                            className: 'city-label-special' // Eigenes CSS-Styling für den Text
                         });
                         return marker;
                     } else {
