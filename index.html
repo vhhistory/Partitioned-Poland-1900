@@ -94,8 +94,9 @@
             text-shadow: 0 0 6px #ffffff, 0 0 6px #ffffff, 2px 2px 3px #ffffff, -2px -2px 3px #ffffff !important;
         }
 
+                /* Ruhiger, weicher Halo für die Imperien-Labels bei aktivierter Eisenbahn */
         .empire-label.active-railway-bg {
-            text-shadow: 0 0 8px #ffffff, 0 0 8px #ffffff, 2px 2px 4px #ffffff, -2px -2px 4px #ffffff !important;
+            text-shadow: 0 0 6px #f4f1ea, 0 0 10px #f4f1ea !important;
         }
 
         /* Regionalbeschriftungen */
@@ -179,6 +180,32 @@
     const provinceLabelsGroup = L.layerGroup().addTo(map);
 
     L.control.layers(null, { "🚂 Eisenbahnnetz (1900)": railwayLayerGroup }, { collapsed: false }).addTo(map);
+
+    map.on('overlayadd', function(e) {
+        if (e.layer === railwayLayerGroup) {
+            // Provinzen & Gouvernements ausblenden
+            if (map.hasLayer(provinceLabelsGroup)) {
+                map.removeLayer(provinceLabelsGroup);
+            }
+            // Halo für Imperien aktivieren
+            document.querySelectorAll('.empire-label').forEach(el => {
+                el.classList.add('active-railway-bg');
+            });
+        }
+    });
+
+    map.on('overlayremove', function(e) {
+        if (e.layer === railwayLayerGroup) {
+            // Provinzen & Gouvernements wieder einblenden
+            if (!map.hasLayer(provinceLabelsGroup)) {
+                map.addLayer(provinceLabelsGroup);
+            }
+            // Halo für Imperien entfernen
+            document.querySelectorAll('.empire-label').forEach(el => {
+                el.classList.remove('active-railway-bg');
+            });
+        }
+    });
 
     function getLatinName(properties) {
         if (!properties) return "";
