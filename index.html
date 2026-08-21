@@ -57,12 +57,15 @@
             white-space: nowrap;
         }
 
-        /* Städtenamen */
+        /* Städtenamen mit starkem Halo */
         .city-label {
             font-weight: 500;
             font-size: 11px;
             color: #222222 !important;
-            text-shadow: 1px 1px 2px #ffffff, -1px -1px 2px #ffffff, 0 0 4px #ffffff;
+            text-shadow: 
+                -1.5px -1.5px 0 #ffffff, 1.5px -1.5px 0 #ffffff,
+                -1.5px  1.5px 0 #ffffff, 1.5px  1.5px 0 #ffffff,
+                 0px -2px 3px #ffffff, 0px 2px 3px #ffffff;
         }
 
         .city-label-special {
@@ -70,10 +73,13 @@
             font-size: 12px;
             color: #000000 !important;
             letter-spacing: 0.2px;
-            text-shadow: 1px 1px 3px #ffffff, -1px -1px 3px #ffffff, 0 0 5px #ffffff;
+            text-shadow: 
+                -2px -2px 0 #ffffff, 2px -2px 0 #ffffff,
+                -2px  2px 0 #ffffff, 2px  2px 0 #ffffff,
+                 0px 0px 5px #ffffff;
         }
 
-        /* Imperien-Labels (KURSIV) */
+        /* Imperien-Labels (KURSIV & breiter Halo) */
         .empire-label {
             font-size: 13px;
             font-weight: 700;
@@ -81,44 +87,38 @@
             letter-spacing: 2.5px;
             text-transform: uppercase;
             color: #2c3e50;
-            text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.95), -1px -1px 3px rgba(255, 255, 255, 0.95);
             pointer-events: none;
-        }
-
-        /* Text-Halo bei Eisenbahn-Netz */
-        .city-label.active-railway-bg {
-            text-shadow: 0 0 4px #ffffff, 0 0 4px #ffffff, 1px 1px 2px #ffffff, -1px -1px 2px #ffffff !important;
-        }
-
-        .city-label-special.active-railway-bg {
-            text-shadow: 0 0 6px #ffffff, 0 0 6px #ffffff, 2px 2px 3px #ffffff, -2px -2px 3px #ffffff !important;
-        }
-
-        .empire-label.active-railway-bg {
-            text-shadow: 0 0 8px #ffffff, 0 0 8px #ffffff, 2px 2px 4px #ffffff, -2px -2px 4px #ffffff !important;
+            text-shadow: 
+                -2px -2px 0 #ffffff, 2px -2px 0 #ffffff,
+                -2px  2px 0 #ffffff, 2px  2px 0 #ffffff,
+                -3px  0px 4px #ffffff, 3px 0px 4px #ffffff;
         }
 
         /* Regionalbeschriftungen */
         .region-label-auto {
             font-size: 10.5px;
             font-weight: 600;
-            color: rgba(40, 50, 60, 0.75);
+            color: rgba(40, 50, 60, 0.85);
             text-transform: none;
             letter-spacing: 0.3px;
             text-align: center;
             white-space: nowrap;
             pointer-events: none;
-            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.9), -1px -1px 2px rgba(255, 255, 255, 0.9);
+            text-shadow: 
+                -1.5px -1.5px 0 #ffffff, 1.5px -1.5px 0 #ffffff,
+                -1.5px  1.5px 0 #ffffff, 1.5px  1.5px 0 #ffffff;
         }
 
         .region-label-poland {
             font-size: 11px;
             font-weight: 700;
-            color: rgba(30, 40, 50, 0.85);
+            color: rgba(30, 40, 50, 0.9);
             letter-spacing: 1px;
             text-transform: uppercase;
             pointer-events: none;
-            text-shadow: 1px 1px 3px #ffffff, -1px -1px 3px #ffffff;
+            text-shadow: 
+                -2px -2px 0 #ffffff, 2px -2px 0 #ffffff,
+                -2px  2px 0 #ffffff, 2px  2px 0 #ffffff;
         }
 
         /* Layer-Control Styling */
@@ -140,7 +140,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
- // 1. Karte initialisieren
+    // 1. Karte initialisieren
     const map = L.map('map', {
         zoomSnap: 0.25,
         zoomDelta: 0.5,
@@ -192,6 +192,7 @@
         const fetchSchlesien = fetch('Schlesien.json').then(r => r.json());
         const fetchUngarn    = fetch('Ungarn.json').then(r => r.json());
         const fetchAdmin     = fetch('Admin-1900-geojson.geojson').then(r => r.json());
+        
         // Eisenbahn-Linien mit exaktem Dateinamen laden
         const fetchRailways  = fetch('Eisenbahn-Linien.geojson')
             .then(r => r.json())
@@ -199,7 +200,8 @@
                 console.error("Fehler beim Laden von Eisenbahn-Linien.geojson:", err);
                 return null;
             });
-      // 1. Manuell platzierbare Regionen-Labels (Koordinaten hier anpassen!)
+
+        // 1. Manuell platzierbare Regionen-Labels
         const regionData = [
             { name: "Provinz Posen", coords: [52.08, 16.8], className: 'region-label-auto' },
             { name: "Provinz Schlesien", coords: [50.78, 17.06], className: 'region-label-auto' },
@@ -231,7 +233,7 @@
             fetchEurope, fetchGermany, fetchAustria, fetchRussia,
             fetchBoehmen, fetchMaehren, fetchSchlesien, fetchUngarn, fetchAdmin, fetchRailways
         ])
-        .then(([europeData, germanyData, austriaData, russiaData, boehmenData, maehrenData, schlesienData, ungarnData, adminData]) => {
+        .then(([europeData, germanyData, austriaData, russiaData, boehmenData, maehrenData, schlesienData, ungarnData, adminData, railwayData]) => {
             
             // A. Europa-Karte laden (ohne die drei Imperien)
             if (europeData) {
@@ -246,7 +248,7 @@
                 }).addTo(map);
             }
 
-            // B. Die 3 Großreiche mit eigenen Shapefiles/Farben laden
+            // B. Die 3 Großreiche laden
             L.geoJSON(germanyData, {
                 pane: 'empiresPane',
                 style: { fill: true, fillColor: '#1e2b37', fillOpacity: 0.18, stroke: true, color: '#1e2b37', weight: 2 }
@@ -262,7 +264,7 @@
                 style: { fill: true, fillColor: '#922b21', fillOpacity: 0.18, stroke: true, color: '#922b21', weight: 2 }
             }).addTo(map);
 
-            // C. Binnengrenzen (nur gestrichelt)
+            // C. Binnengrenzen (gestrichelt)
             const subBorderStyle = {
                 fill: false,
                 stroke: true,
@@ -277,7 +279,7 @@
             L.geoJSON(schlesienData, { pane: 'subbordersPane', style: subBorderStyle }).addTo(map);
             L.geoJSON(ungarnData,    { pane: 'subbordersPane', style: subBorderStyle }).addTo(map);
 
-           // Admin-Ebenen / Gouvernements (mit robusterem Ausschluss für die manuell gesetzten Labels)
+            // Admin-Ebenen / Gouvernements
             L.geoJSON(adminData, {
                 pane: 'subbordersPane',
                 style: subBorderStyle,
@@ -286,14 +288,12 @@
                     const nameLower = name.toLowerCase();
                     const rawProps = JSON.stringify(feature.properties || {}).toLowerCase();
                     
-                    // Polnische Gouvernements filtern
                     const isPolishGov = rawProps.includes("suwalki") || rawProps.includes("warschau") || 
                                         rawProps.includes("kalisch") || rawProps.includes("kielce") || 
                                         rawProps.includes("lublin") || rawProps.includes("lomza") || 
                                         rawProps.includes("radom") || rawProps.includes("siedlce") || 
                                         rawProps.includes("piotrkow") || rawProps.includes("plock");
 
-                    // Abgleich über alle gängigen Schreibweisen (DE, EN, PL, LA)
                     const isManualLabel = nameLower.includes("posen") || nameLower.includes("pozna") ||
                                           nameLower.includes("schlesien") || nameLower.includes("silesia") || nameLower.includes("śląsk") ||
                                           nameLower.includes("galizien") || nameLower.includes("galicia") || nameLower.includes("galicja") ||
@@ -318,10 +318,40 @@
                     }
                 }
             }).addTo(map);
+
+            // D. EISENBAHNEN RENDERN (Schwarz-Weiß)
+            if (railwayData) {
+                // Weiße Unterlegung
+                const railwayHaloLayer = L.geoJSON(railwayData, {
+                    pane: 'railwaysPane',
+                    style: {
+                        color: '#ffffff',
+                        weight: 2.8,
+                        opacity: 0.9,
+                        lineCap: 'round',
+                        lineJoin: 'round'
+                    }
+                });
+
+                // Schwarze gestrichelte Hauptlinie
+                const railwayLineLayer = L.geoJSON(railwayData, {
+                    pane: 'railwaysPane',
+                    style: {
+                        color: '#000000',
+                        weight: 1.3,
+                        opacity: 1.0,
+                        dashArray: '4, 4',
+                        lineCap: 'square'
+                    }
+                });
+
+                railwayLayerGroup.addLayer(railwayHaloLayer);
+                railwayLayerGroup.addLayer(railwayLineLayer);
+            }
         })
         .catch(err => console.error("Fehler beim Laden der GeoJSON-Dateien:", err));
 
-        // Imperien-Labels (Russland wieder etwas höher gesetzt)
+        // Imperien-Labels
         const empireData = [
             { name: "Deutsches Kaiserreich", coords: [51.7, 15.8] },
             { name: "Russländisches Reich", coords: [51.5, 22.7] },
@@ -341,7 +371,7 @@
             }).addTo(map);
         });
 
-        // Städte & Sonderposition für Krakau
+        // Städte & Sonderposition
         const markerColor = "#2c3e50";
         const specialCities = ["Posen", "Warschau", "Lemberg"];
 
@@ -357,7 +387,6 @@
         });
 
         function addCityToMap(name, lat, lng) {
-
             if (specialCities.includes(name)) {
                 L.marker([lat, lng], { icon: starIcon, zIndexOffset: 1000 })
                  .bindTooltip(name, { permanent: true, direction: 'right', offset: [10, 0], className: 'city-label-special' })
