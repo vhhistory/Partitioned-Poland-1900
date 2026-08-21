@@ -245,34 +245,35 @@ Promise.all([
         // FIX 1: "railwayData" als 10. Argument hinzugefügt
         .then(([europeData, germanyData, austriaData, russiaData, boehmenData, maehrenData, schlesienData, ungarnData, adminData, railwayData]) => {
             
-if (railwayData) {
-    // 1. Sanfter, unaufdringlicher Halo (breit, aber transparent)
-    const railwayHaloLayer = L.geoJSON(railwayData, {
-        pane: 'railwaysPane',
-        style: {
-            color: '#f4efe6',   // Deine Papierfarbe
-            weight: 4.5,        // Etwas schmaler als 5.5, verhindert "fette" Batzen
-            opacity: 0.5,       // Stark reduziert: Schützt Text, ohne knallweiß zu leuchten
-            lineCap: 'round',
-            lineJoin: 'round'
-        }
-    });
+// Klassisches historisches Gleismuster (Schwarz-Weiß gestreift)
+            if (railwayData) {
+                // 1. Untere Ebene: Durchgehende dunkle Basislinie
+                const railwayBaseLayer = L.geoJSON(railwayData, {
+                    pane: 'railwaysPane',
+                    style: {
+                        color: '#2c3e50',   // Dunkler Schieferton
+                        weight: 3.0,        // Gesamtbreite der Schiene
+                        opacity: 0.95,
+                        lineCap: 'butt',
+                        lineJoin: 'miter'
+                    }
+                });
 
-    // 2. Breites, breitenwirksames Eisenbahnnetz ohne Flimmern
-    const railwayLineLayer = L.geoJSON(railwayData, {
-        pane: 'railwaysPane',
-        style: {
-            color: '#384856',   // Sanfteres Schiefer-Dunkelgrau
-            weight: 2.0,        // Schön breit und gut sichtbar
-            opacity: 0.75,      // Genug Transparenz, um nicht erschlagend zu wirken
-            dashArray: '12, 6', // VIEL längere Striche -> stoppt das Flimmern sofort!
-            lineCap: 'round'
-        }
-    });
+                // 2. Obere Ebene: Gestrichelte Linie in deiner Karten-Papierfarbe
+                const railwayTrackLayer = L.geoJSON(railwayData, {
+                    pane: 'railwaysPane',
+                    style: {
+                        color: '#f4f1ea',   // Matcht exakt deine Papierfarbe (#f4f1ea)
+                        weight: 1.4,        // Schmaler als die Basis, erzeugt dunkle Ränder
+                        opacity: 1.0,
+                        dashArray: '5, 5',  // Erzeugt die klassische Gleis-Optik
+                        lineCap: 'butt'
+                    }
+                });
 
-    railwayLayerGroup.addLayer(railwayHaloLayer);
-    railwayLayerGroup.addLayer(railwayLineLayer);
-}
+                railwayLayerGroup.addLayer(railwayBaseLayer);
+                railwayLayerGroup.addLayer(railwayTrackLayer);
+            }
             // A. Europa-Karte laden (ohne die drei Imperien)
             if (europeData) {
                 L.geoJSON(europeData, {
