@@ -70,6 +70,19 @@
             pointer-events: none;
             white-space: nowrap;
         }
+        /* Stil für Gouvernement- und Provinzbeschriftungen */
+.region-label {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 11px;
+    font-weight: bold;
+    font-style: italic;
+    color: #4a2c2c; /* Dunkles Historisches Rot/Braun */
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    text-shadow: 1px 1px 2px #ffffff, -1px -1px 2px #ffffff, 1px -1px 2px #ffffff, -1px 1px 2px #ffffff;
+    pointer-events: none; /* Verhindert das Blockieren von Klicks auf der Karte */
+    white-space: nowrap;
+}
     </style>
 </head>
 <body>
@@ -108,24 +121,65 @@ L.tileLayer('https://tile.openhistoricalmap.org/mapnik/{z}/{x}/{y}.png?datetime=
     attribution: '&copy; <a href="https://www.openhistoricalmap.org/">OpenHistoricalMap</a> contributors'
 }).addTo(map);
 
+    // Beschriftung für das Gouvernement Radom an zentraler Position setzen
+L.marker([51.402, 21.147], {
+    pane: 'specialCitiesPane', // Nutzen der bestehenden oberen Z-Index-Ebene
+    icon: L.divIcon({
+        className: 'region-label',
+        html: 'Gouvernement Radom',
+        iconSize: [160, 20],
+        iconAnchor: [80, 10] // Zentriert den Text exakt über den Koordinaten
+    }),
+    interactive: false
+}).addTo(map);
+
     // 4. Eigene GeoJSON-Grenzen (Optional – nur als dezent hervorgehobener Umriss)
-    fetch('europa_1900.geojson')
-        .then(response => response.json())
-        .then(data => {
-            L.geoJSON(data, {
-                pane: 'bordersPane',
-                style: function(feature) {
-                    return {
-                        fillColor: 'transparent', // Auf transparent gesetzt, damit OHM-Kartendetails sichtbar bleiben
-                        weight: 1.2,
-                        opacity: 0.8,
-                        color: '#4a3b32',          // Dunkles Sepia für Akzentlinien
-                        fillOpacity: 0
-                    };
+    // GeoJSON aus GitHub laden & Radom ergänzen
+fetch('Admin-1900-geojson.geojson')
+    .then(response => {
+        if (!response.ok) throw new Error("Datei konnte nicht geladen werden.");
+        return response.json();
+    })
+    .then(data => {
+        L.geoJSON(data, {
+            pane: 'bordersPane',
+            style: function(feature) {
+                const name = (feature.properties && feature.properties.name) ? feature.properties.name : "";
+                let color = "#bdc3c7";
+
+                if (name.includes("Provinz")) color = "#2c3e50";         // Preußen (Dunkelblau/Grau)
+                else if (name.includes("Gouvernement")) color = "#c0392b"; // Russland (Rot)
+                else color = "#f39c12";                                  // Österreich-Ungarn (Gold)
+
+                return {
+                    fillColor: color,
+                    fillOpacity: 0.2,
+                    color: color,
+                    weight: 1.5,
+                    dashArray: '3, 3'
+                };
+            },
+            onEachFeature: function(feature, layer) {
+                if (feature.properties && feature.properties.name) {
+                    layer.bindPopup("<b>" + feature.properties.name + "</b>");
                 }
-            }).addTo(map);
-        })
-        .catch(err => console.error("Fehler beim Laden der Grenzen:", err));
+            }
+        }).addTo(map);
+
+        // Nach dem Laden der Grenzen wird das Label für Radom ergänzt
+        L.marker([51.402, 21.147], {
+            pane: 'specialCitiesPane',
+            icon: L.divIcon({
+                className: 'region-label',
+                html: 'Gouvernement Radom',
+                iconSize: [160, 20],
+                iconAnchor: [80, 10]
+            }),
+            interactive: false
+        }).addTo(map);
+
+    })
+    .catch(err => console.error("Fehler beim Laden von Admin-1900-geojson.geojson:", err));
 
     // 5. Imperien-Labels an den gewünschten Positionen
     const empires = [
