@@ -227,12 +227,44 @@
             "Russia (Soviet Union)"
         ];
 
-        Promise.all([
+Promise.all([
             fetchEurope, fetchGermany, fetchAustria, fetchRussia,
             fetchBoehmen, fetchMaehren, fetchSchlesien, fetchUngarn, fetchAdmin, fetchRailways
         ])
-        .then(([europeData, germanyData, austriaData, russiaData, boehmenData, maehrenData, schlesienData, ungarnData, adminData]) => {
+        // FIX 1: "railwayData" als 10. Argument hinzugefügt
+        .then(([europeData, germanyData, austriaData, russiaData, boehmenData, maehrenData, schlesienData, ungarnData, adminData, railwayData]) => {
             
+            // FIX 2: Eisenbahn-Linien verarbeiten und zur LayerGroup hinzufügen
+            if (railwayData) {
+                // Weiße Unterlegung (Halo für Lesbarkeit)
+                const railwayHaloLayer = L.geoJSON(railwayData, {
+                    pane: 'railwaysPane',
+                    style: {
+                        color: '#ffffff',
+                        weight: 3,
+                        opacity: 0.9,
+                        lineCap: 'round',
+                        lineJoin: 'round'
+                    }
+                });
+
+                // Schwarze Hauptlinie (gestrichelt)
+                const railwayLineLayer = L.geoJSON(railwayData, {
+                    pane: 'railwaysPane',
+                    style: {
+                        color: '#000000',
+                        weight: 1.5,
+                        opacity: 1.0,
+                        dashArray: '4, 4',
+                        lineCap: 'square'
+                    }
+                });
+
+                // Verknüpfung mit der bestehenden Layer-Gruppe für die Menüsteuerung
+                railwayLayerGroup.addLayer(railwayHaloLayer);
+                railwayLayerGroup.addLayer(railwayLineLayer);
+            }
+
             // A. Europa-Karte laden (ohne die drei Imperien)
             if (europeData) {
                 L.geoJSON(europeData, {
