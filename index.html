@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Europa um 1900</title>
-    <!-- Turf.js für Geometrie-Operationen (Differenz/Beschneidung) -->
-    <script src="https://unpkg.com/@turf/turf@6/turf.min.min.js"></script>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -245,23 +243,66 @@
     Promise.all([fetchGermany, fetchAustria, fetchEurope])
         .then(([germanyData, austriaData, europeData]) => {
             
-            // 5a. Deutsches Kaiserreich zeichnen
-            L.geoJSON(germanyData, {
-                pane: 'empiresPane',
-                style: {
-                    fill: true,
-                    fillColor: '#1e2b37',
-                    fillOpacity: 0.15,
-                    stroke: true,
-                    color: '#1e2b37',
-                    weight: 2.5,
-                    opacity: 0.85
+// 5a. Eigene Panes für saubere Grenz-Überlagerung erstellen
+    map.createPane('russiaPane');
+    map.getPane('russiaPane').style.zIndex = 300; // Russland unten
+
+    map.createPane('austriaPane');
+    map.getPane('austriaPane').style.zIndex = 310; // Österreich-Ungarn Mitte
+
+    map.createPane('germanyPane');
+    map.getPane('germanyPane').style.zIndex = 320; // Kaiserreich oben (deckt Russlands Überlappung ab)
+
+    // 5b. Russland / Restliche Imperien aus europa_1900.geojson laden
+    fetch('europa_1900.geojson')
+        .then(res => res.json())
+        .then(data => {
+            L.geoJSON(data, {
+                pane: 'russiaPane',
+                filter: function(feature) {
+                    const p = feature.properties || {};
+                    const rawName = JSON.stringify(p).toLowerCase();
+                    
+                    // Deutschland und Österreich-Ungarn hier filtern (werden separat geladen)
+                    const isGermany = rawName.includes("german") || rawName.includes("deutsches") || rawName.includes("preußen") || rawName.includes("prussia");
+                    const isAustria = rawName.includes("austr") || rawName.includes("österreich") || rawName.includes("hungary") || rawName.includes("ungarn");
+
+                    return !isGermany && !isAustria;
+                },
+                style: function(feature) {
+                    const p = feature.properties || {};
+                    const rawName = JSON.stringify(p).toLowerCase();
+
+                    let color = "#34495e";
+                    if (rawName.includes("russi") || rawName.includes("russisch")) {
+                        color = "#922b21"; 
+                    }
+
+                    return {
+                        fill: true,
+                        fillColor: color,
+                        fillOpacity: 0.15,
+                        stroke: true,
+                        color: color,
+                        weight: 2.5,
+                        opacity: 0.85,
+                        lineCap: 'round',
+                        lineJoin: 'round'
+                    };
                 }
             }).addTo(map);
+        })
+        .catch(err => console.error("Fehler bei europa_1900.geojson:", err));
 
-            // 5b. Österreich-Ungarn zeichnen
-            L.geoJSON(austriaData, {
-                pane: 'empiresPane',
+    // 5c. Österreich-Ungarn laden aus Österreich-1908.json
+    fetch('Österreich-1908.json')
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP Fehler " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            L.geoJSON(data, {
+                pane: 'austriaPane',
                 style: {
                     fill: true,
                     fillColor: '#b9770e',
@@ -269,77 +310,37 @@
                     stroke: true,
                     color: '#b9770e',
                     weight: 2.5,
-                    opacity: 0.85
+                    opacity: 0.85,
+                    lineCap: 'round',
+                    lineJoin: 'round'
                 }
             }).addTo(map);
-
-            // Maske aus Deutschland & Österreich erstellen
-            let maskPoly = null;
-            try {
-                const gPoly = germanyData.features ? germanyData.features[0] : germanyData;
-                const aPoly = austriaData.features ? austriaData.features[0] : austriaData;
-                maskPoly = turf.union(gPoly, aPoly);
-            } catch(e) {
-                console.warn("Kombination der Masken-Polygone fehlgeschlagen, verwende Einzelmaske:", e);
-                maskPoly = germanyData.features ? germanyData.features[0] : germanyData;
-            }
-
-            // 5c. Russland / Rest-Imperien verarbeiten & Überlappung an der Memel/Nidden abschneiden
-            L.geoJSON(europeData, {
-                pane: 'empiresPane',
-                filter: function(feature) {
-                    const p = feature.properties || {};
-                    const rawName = JSON.stringify(p).toLowerCase();
-                    const isGermany = rawName.includes("german") || rawName.includes("deutsches") || rawName.includes("preußen") || rawName.includes("prussia");
-                    const isAustria = rawName.includes("austr") || rawName.includes("österreich") || rawName.includes("hungary") || rawName.includes("ungarn");
-                    return !isGermany && !isAustria;
-                },
-                style: function(feature) {
-                    return {
-                        fill: true,
-                        fillColor: '#922b21',
-                        fillOpacity: 0.15,
-                        stroke: true,
-                        color: '#922b21',
-                        weight: 2.5,
-                        opacity: 0.85
-                    };
-                },
-                // Geometrie beschneiden, bevor sie gezeichnet wird
-                coordsToLatLng: function(coords) {
-                    return new L.LatLng(coords[1], coords[0]);
-                },
-                onEachFeature: function(feature, layer) {
-                    // Falls Turf geladen ist und eine Maske existiert: Differenz bilden
-                    if (typeof turf !== 'undefined' && maskPoly) {
-                        try {
-                            const clipped = turf.difference(feature, maskPoly);
-                            if (clipped) {
-                                layer.clearLayers ? layer.clearLayers() : null;
-                                const clippedLayer = L.geoJSON(clipped, {
-                                    pane: 'empiresPane',
-                                    style: {
-                                        fill: true,
-                                        fillColor: '#922b21',
-                                        fillOpacity: 0.15,
-                                        stroke: true,
-                                        color: '#922b21',
-                                        weight: 2.5,
-                                        opacity: 0.85
-                                    }
-                                });
-                                clippedLayer.addTo(map);
-                                map.removeLayer(layer); // Unbeschnittenes Original entfernen
-                            }
-                        } catch(err) {
-                            console.error("Fehler beim Beschneiden der russischen Grenze:", err);
-                        }
-                    }
-                }
-            }).addTo(map);
-
         })
-        .catch(err => console.error("Fehler beim Laden der Imperien-Dateien:", err));
+        .catch(err => console.error("Fehler bei Österreich-1908.json:", err));
+
+    // 5d. Exaktes Deutsches Kaiserreich laden aus Deutsches-Kaiserreich_1914.json
+    fetch('Deutsches-Kaiserreich_1914.json')
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP Fehler " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            L.geoJSON(data, {
+                pane: 'germanyPane',
+                style: {
+                    fill: true,
+                    fillColor: '#1e2b37',
+                    fillOpacity: 0.15,
+                    stroke: true,
+                    color: '#1e2b37',
+                    weight: 2.5,
+                    opacity: 0.85,
+                    lineCap: 'round',
+                    lineJoin: 'round'
+                }
+            }).addTo(map);
+        })
+        .catch(err => console.error("Fehler bei Deutsches-Kaiserreich_1914.json:", err));
 
     // 6. Admin (Admin-1900-geojson.geojson)
     fetch('Admin-1900-geojson.geojson')
