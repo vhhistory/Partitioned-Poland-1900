@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Europa um 1900 - Dynamische Provinzbeschriftung</title>
+    <title>Europa um 1900 - Transparente Hintergründe</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -49,13 +49,20 @@
             display: none !important;
         }
 
+        /* Base Label Styles mit sanften Übergängen für den Hintergrund */
+        .city-label, 
+        .city-label-special, 
+        .empire-label {
+            transition: background-color 0.2s ease, padding 0.2s ease, border-radius 0.2s ease;
+            white-space: nowrap;
+        }
+
         /* Städtenamen */
         .city-label {
             font-weight: 500;
             font-size: 11px;
             color: #222222 !important;
             text-shadow: 1px 1px 2px #ffffff, -1px -1px 2px #ffffff, 0 0 4px #ffffff;
-            white-space: nowrap;
         }
 
         .city-label-special {
@@ -64,7 +71,6 @@
             color: #000000 !important;
             letter-spacing: 0.2px;
             text-shadow: 1px 1px 3px #ffffff, -1px -1px 3px #ffffff, 0 0 5px #ffffff;
-            white-space: nowrap;
         }
 
         /* Imperien-Labels (KURSIV) */
@@ -76,7 +82,14 @@
             text-transform: uppercase;
             text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.95), -1px -1px 3px rgba(255, 255, 255, 0.95);
             pointer-events: none;
-            white-space: nowrap;
+        }
+
+        /* Dynamischer weißer halbtransparenter Hintergrund (wird bei aktivierten Eisenbahnen zugeschaltet) */
+        .active-railway-bg {
+            background-color: rgba(255, 255, 255, 0.75) !important;
+            padding: 2px 5px !important;
+            border-radius: 3px !important;
+            box-shadow: 0 0 4px rgba(255, 255, 255, 0.8) !important;
         }
 
         /* Regionalbeschriftungen (Provinzen & Gouvernements) */
@@ -146,21 +159,34 @@
     // Layer-Control oben rechts hinzufügen
     const layerControl = L.control.layers(null, overlayMaps, { collapsed: false }).addTo(map);
 
-    // Events zum Ein-/Ausblenden der Provinznamen basierend auf dem Eisenbahn-Layer
+    // Events zum Umschalten: Provinznamen ausblenden & Weiße Felder um Städte/Imperien aktivieren
     map.on('overlayadd', function(e) {
         if (e.layer === railwayLayerGroup) {
             map.removeLayer(provinceLabelsGroup);
+            document.body.classList.add('railways-active');
+            toggleLabelBackgrounds(true);
         }
     });
 
     map.on('overlayremove', function(e) {
         if (e.layer === railwayLayerGroup) {
             map.addLayer(provinceLabelsGroup);
+            document.body.classList.remove('railways-active');
+            toggleLabelBackgrounds(false);
         }
     });
 
-    // Eisenbahn-Layer standardmäßig NICHT aktivieren -> Provinz-Labels bleiben aktiv
-    // (railwayLayerGroup.addTo(map) wird hier weggelassen)
+    // Hilfsfunktion zum Ein-/Ausschalten der weißen Text-Hintergründe
+    function toggleLabelBackgrounds(enable) {
+        const labels = document.querySelectorAll('.city-label, .city-label-special, .empire-label');
+        labels.forEach(label => {
+            if (enable) {
+                label.classList.add('active-railway-bg');
+            } else {
+                label.classList.remove('active-railway-bg');
+            }
+        });
+    }
 
     // 3. Basemaps
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
@@ -295,7 +321,7 @@
         })
         .catch(err => console.error("Fehler bei Admin-1900-geojson.geojson:", err));
 
-   // 6b. Eisenbahnlinien laden (Gleis-Optik: Schwarz-Weiß gestrichelt mit Transparenz)
+    // 6b. Eisenbahnlinien laden (Gleis-Optik: Schwarz-Weiß gestrichelt mit Transparenz)
     fetch('Eisenbahn-Linien.geojson')
         .then(res => {
             if (!res.ok) throw new Error("HTTP Fehler " + res.status);
@@ -311,25 +337,25 @@
                 }
             } catch(e) {}
 
-            // 1. Untere Ebene: Dunkle Basislinie (jetzt leicht transparent)
+            // 1. Untere Ebene: Dunkle Basislinie
             const baseRailLayer = L.geoJSON(data, {
                 pane: 'railwaysPane',
                 coordsToLatLng: coords => swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]),
                 style: {
                     color: '#1a1a1a',
                     weight: 2.2,
-                    opacity: 0.6  // Von 0.85 auf 0.6 reduziert
+                    opacity: 0.6
                 }
             });
 
-            // 2. Obere Ebene: Gestrichelte weiße Überlagerung (ebenfalls leicht transparent)
+            // 2. Obere Ebene: Gestrichelte weiße Überlagerung ("Gleis-Effekt")
             const dashRailLayer = L.geoJSON(data, {
                 pane: 'railwaysPane',
                 coordsToLatLng: coords => swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]),
                 style: {
                     color: '#ffffff',
                     weight: 1.0,
-                    opacity: 0.65, // Von 0.95 auf 0.65 reduziert
+                    opacity: 0.65,
                     dashArray: '3, 4'
                 },
                 onEachFeature: function(feature, layer) {
@@ -346,7 +372,7 @@
         })
         .catch(err => console.error("Fehler beim Laden von Eisenbahn-Linien.geojson:", err));
 
-    // 7. Imperien-Labels (Aktualisierte Koordinaten)
+    // 7. Imperien-Labels
     const empires = [
         { name: "Deutsches Kaiserreich", coords: [51.7, 16.4] },
         { name: "Russländisches Reich", coords: [51.7, 21.8] },
