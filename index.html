@@ -234,18 +234,31 @@
         return name;
     }
 
-  // 5a. Andere Imperien laden (ohne Deutsches Reich) aus europa_1900.geojson
+  // 5a. Eigene Panes für saubere Grenz-Überlagerung erstellen
+    map.createPane('russiaPane');
+    map.getPane('russiaPane').style.zIndex = 300; // Russland unten
+
+    map.createPane('austriaPane');
+    map.getPane('austriaPane').style.zIndex = 310; // Österreich-Ungarn Mitte
+
+    map.createPane('germanyPane');
+    map.getPane('germanyPane').style.zIndex = 320; // Kaiserreich oben (deckt Russlands Überlappung ab)
+
+    // 5b. Russland / Restliche Imperien aus europa_1900.geojson laden
     fetch('europa_1900.geojson')
         .then(res => res.json())
         .then(data => {
             L.geoJSON(data, {
-                pane: 'empiresPane',
+                pane: 'russiaPane',
                 filter: function(feature) {
                     const p = feature.properties || {};
                     const rawName = JSON.stringify(p).toLowerCase();
-                    // Deutsches Reich / Deutschland aus dieser Datei unterdrücken
+                    
+                    // Deutschland und Österreich-Ungarn hier filtern (werden separat geladen)
                     const isGermany = rawName.includes("german") || rawName.includes("deutsches") || rawName.includes("preußen") || rawName.includes("prussia");
-                    return !isGermany;
+                    const isAustria = rawName.includes("austr") || rawName.includes("österreich") || rawName.includes("hungary") || rawName.includes("ungarn");
+
+                    return !isGermany && !isAustria;
                 },
                 style: function(feature) {
                     const p = feature.properties || {};
@@ -254,8 +267,6 @@
                     let color = "#34495e";
                     if (rawName.includes("russi") || rawName.includes("russisch")) {
                         color = "#922b21"; 
-                    } else if (rawName.includes("austr") || rawName.includes("österreich") || rawName.includes("hungary") || rawName.includes("ungarn")) {
-                        color = "#b9770e"; 
                     }
 
                     return {
@@ -265,14 +276,40 @@
                         stroke: true,
                         color: color,
                         weight: 2.5,
-                        opacity: 0.85
+                        opacity: 0.85,
+                        lineCap: 'round',
+                        lineJoin: 'round'
                     };
                 }
             }).addTo(map);
         })
         .catch(err => console.error("Fehler bei europa_1900.geojson:", err));
 
-    // 5b. Exaktes Deutsches Kaiserreich laden aus Deutsches-Kaiserreich_1914.json
+    // 5c. Österreich-Ungarn laden aus Österreich-1908.json
+    fetch('Österreich-1908.json')
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP Fehler " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            L.geoJSON(data, {
+                pane: 'austriaPane',
+                style: {
+                    fill: true,
+                    fillColor: '#b9770e',
+                    fillOpacity: 0.15,
+                    stroke: true,
+                    color: '#b9770e',
+                    weight: 2.5,
+                    opacity: 0.85,
+                    lineCap: 'round',
+                    lineJoin: 'round'
+                }
+            }).addTo(map);
+        })
+        .catch(err => console.error("Fehler bei Österreich-1908.json:", err));
+
+    // 5d. Exaktes Deutsches Kaiserreich laden aus Deutsches-Kaiserreich_1914.json
     fetch('Deutsches-Kaiserreich_1914.json')
         .then(res => {
             if (!res.ok) throw new Error("HTTP Fehler " + res.status);
@@ -280,7 +317,7 @@
         })
         .then(data => {
             L.geoJSON(data, {
-                pane: 'empiresPane',
+                pane: 'germanyPane',
                 style: {
                     fill: true,
                     fillColor: '#1e2b37',
@@ -288,7 +325,9 @@
                     stroke: true,
                     color: '#1e2b37',
                     weight: 2.5,
-                    opacity: 0.85
+                    opacity: 0.85,
+                    lineCap: 'round',
+                    lineJoin: 'round'
                 }
             }).addTo(map);
         })
