@@ -245,36 +245,34 @@ Promise.all([
         // FIX 1: "railwayData" als 10. Argument hinzugefügt
         .then(([europeData, germanyData, austriaData, russiaData, boehmenData, maehrenData, schlesienData, ungarnData, adminData, railwayData]) => {
             
-// Eisenbahn-Linien dezenter rendern
 if (railwayData) {
-    // 1. Breiterer Halo (erzeugt Freiraum um die Schiene)
+    // 1. Sanfter, unaufdringlicher Halo (breit, aber transparent)
     const railwayHaloLayer = L.geoJSON(railwayData, {
         pane: 'railwaysPane',
         style: {
-            color: '#fdfbf7',   // Passt sich deiner Papierfarbe an
-            weight: 5.5,        // Deutlich breiter als die Linie selbst!
-            opacity: 0.85,
+            color: '#f4efe6',   // Deine Papierfarbe
+            weight: 4.5,        // Etwas schmaler als 5.5, verhindert "fette" Batzen
+            opacity: 0.5,       // Stark reduziert: Schützt Text, ohne knallweiß zu leuchten
             lineCap: 'round',
             lineJoin: 'round'
         }
     });
 
-    // 2. Präsentere, breitere Hauptlinie
+    // 2. Breites, breitenwirksames Eisenbahnnetz ohne Flimmern
     const railwayLineLayer = L.geoJSON(railwayData, {
         pane: 'railwaysPane',
         style: {
-            color: '#2b3a4a',   // Kräftiges Dunkelblau/Schiefer statt Rein-Schwarz
-            weight: 2.2,        // Verdoppelte Breite für Präsenz
-            opacity: 0.9,
-            dashArray: '6, 4',  // Längere Striche wirken ruhiger als kurze
-            lineCap: 'butt'
+            color: '#384856',   // Sanfteres Schiefer-Dunkelgrau
+            weight: 2.0,        // Schön breit und gut sichtbar
+            opacity: 0.75,      // Genug Transparenz, um nicht erschlagend zu wirken
+            dashArray: '12, 6', // VIEL längere Striche -> stoppt das Flimmern sofort!
+            lineCap: 'round'
         }
     });
 
     railwayLayerGroup.addLayer(railwayHaloLayer);
     railwayLayerGroup.addLayer(railwayLineLayer);
 }
-
             // A. Europa-Karte laden (ohne die drei Imperien)
             if (europeData) {
                 L.geoJSON(europeData, {
