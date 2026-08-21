@@ -26,61 +26,50 @@
             background-color: #d4dedd;
         }
 
-        /* Standard Stadt-Labels */
+        /* 1. Sämtliche Hintergründe, Rahmen & Pfeile von Leaflet-Tooltips strikt ausblenden */
+        .leaflet-tooltip,
+        .leaflet-tooltip-pane .leaflet-tooltip {
+            background: transparent !important;
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+        }
+
+        .leaflet-tooltip-pane .leaflet-tooltip::before {
+            display: none !important;
+        }
+
+        /* 2. Standard-Städtenamen ohne Rahmen/Kasten */
         .city-label {
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid #7f8c8d;
-            border-radius: 3px;
-            padding: 1px 5px;
+            font-weight: 600;
             font-size: 11px;
-            color: #2c3e50;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            color: #111111;
+            text-shadow: 1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff;
             white-space: nowrap;
         }
 
-        /* Hervorgehobene Fokusstädte */
+        /* 3. Hervorgehobene Fokusstädte (Posen, Warschau, Lemberg) */
         .city-label-special {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            font-weight: 700;
+            font-weight: 800;
             font-size: 12px;
             color: #111111;
             text-shadow: 1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff;
+            white-space: nowrap;
         }
 
-        /* Imperien Beschriftung */
-        // 5. Imperien-Labels nahe am Dreiländereck (Kattowitz / Dreikaisereck)
-        const empires = [
-            { 
-                name: "Deutsches Kaiserreich", 
-                coords: [50.8, 17.5],  // Nordwestlich des Dreiländerecks (Schlesien)
-                anchor: [180, 10]       // Rechtsbündig ausgerichtet
-            },
-            { 
-                name: "Österreich-Ungarn", 
-                coords: [49.5, 19.5],  // Südlich des Dreiländerecks (Galizien)
-                anchor: [100, 0]        // Zentriert
-            },
-            { 
-                name: "Russländisches Reich", 
-                coords: [51.2, 21.8],  // Nordöstlich des Dreiländerecks (Kongresspolen)
-                anchor: [20, 10]        // Linksbündig ausgerichtet
-            }
-        ];
-        
-        empires.forEach(emp => {
-            L.marker(emp.coords, {
-                pane: 'specialCitiesPane',
-                icon: L.divIcon({
-                    className: 'empire-label',
-                    html: emp.name,
-                    iconSize: [200, 20],
-                    iconAnchor: emp.anchor
-                }),
-                interactive: false
-            }).addTo(map);
-        });
+        /* 4. Imperien-Beschriftungen */
+        .empire-label {
+            font-family: 'Georgia', serif;
+            font-size: 13px;
+            font-weight: bold;
+            font-style: italic;
+            color: #3e2723;
+            letter-spacing: 0.5px;
+            text-shadow: 1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff;
+            pointer-events: none;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -92,25 +81,25 @@
 
 <script>
     // 1. Karte initialisieren
-    var map = L.map('map').setView([52.0, 25.0], 5);
+    var map = L.map('map').setView([51.8, 19.5], 6);
 
-    // 2. Panes für Z-Index Ebenensteuerung erstellen
+    // 2. Panes für Z-Index Ebenensteuerung
     map.createPane('bordersPane');
-    map.getPane('bordersPane').style.zIndex = 350; // Unter den Städten
+    map.getPane('bordersPane').style.zIndex = 350;
 
     map.createPane('citiesPane');
-    map.getPane('citiesPane').style.zIndex = 450; // Immer über der Basiskarte & den Grenzen
+    map.getPane('citiesPane').style.zIndex = 450;
 
     map.createPane('specialCitiesPane');
-    map.getPane('specialCitiesPane').style.zIndex = 500; // Ganz oben
+    map.getPane('specialCitiesPane').style.zIndex = 500;
 
-    // 3. Basiskarte ohne Beschriftung (CARTO Voyager Nolabels)
+    // 3. Basiskarte (CARTO Voyager Nolabels)
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap &copy; CARTO'
     }).addTo(map);
 
-    // 4. Historische Grenzen (1900) auf 'bordersPane' legen
+    // 4. Historische Grenzen
     fetch('europa_1900.geojson')
         .then(response => response.json())
         .then(data => {
@@ -118,10 +107,10 @@
                 pane: 'bordersPane',
                 style: function(feature) {
                     return {
-                        fillColor: '#fcfbfa', // Transparenter Sandton über Voyager-Basiskarte
+                        fillColor: '#fcfbfa',
                         weight: 1.2,
                         opacity: 0.9,
-                        color: '#7f8c8d',     // Neutrale Grenzlinie
+                        color: '#7f8c8d',
                         fillOpacity: 0.35
                     };
                 }
@@ -129,11 +118,23 @@
         })
         .catch(err => console.error("Fehler beim Laden der Grenzen:", err));
 
-    // 5. Imperien-Labels
+    // 5. Imperien-Labels an den gewünschten Positionen
     const empires = [
-        { name: "Deutsches Kaiserreich", coords: [51.5, 10.5] },
-        { name: "Russländisches Reich", coords: [55.0, 30.0] },
-        { name: "Österreich-Ungarn", coords: [47.5, 19.5] }
+        { 
+            name: "Deutsches Kaiserreich", 
+            coords: [51.7, 16.9],  // Zwischen Posen (52.4) und Breslau (51.1)
+            anchor: [100, 10]
+        },
+        { 
+            name: "Russländisches Reich", 
+            coords: [51.7, 21.8],  // Zwischen Warschau (52.2) und Lublin (51.2)
+            anchor: [100, 10]
+        },
+        { 
+            name: "Österreich-Ungarn", 
+            coords: [49.5, 19.9],  // Direkt unterhalb von Krakau (50.0)
+            anchor: [100, 10]
+        }
     ];
 
     empires.forEach(emp => {
@@ -143,71 +144,68 @@
                 className: 'empire-label',
                 html: emp.name,
                 iconSize: [200, 20],
-                iconAnchor: [100, 10]
+                iconAnchor: emp.anchor
             }),
             interactive: false
         }).addTo(map);
     });
 
-    // 6. Städte rendern
-   // 1. Einheitliche Farbe für alle Orte
-const markerColor = "#2c3e50";
+    // 6. Städte rendern (Einheitliche Farbe)
+    const markerColor = "#2c3e50";
+    const specialCities = ["Posen", "Warschau", "Lemberg"];
 
-// 2. Stern-Icon für Posen, Warschau & Lemberg in der exakt gleichen Farbe
-const starIcon = L.divIcon({
-    pane: 'specialCitiesPane',
-    html: `<svg height="18" width="18" viewBox="0 0 24 24" style="display: block;">
-             <polygon points="12,2 15,9 22,9 16,14 18,21 12,17 6,21 8,14 2,9 9,9" 
-                      fill="${markerColor}" stroke="#ffffff" stroke-width="1.5"/>
-           </svg>`,
-    className: '',
-    iconSize: [18, 18],
-    iconAnchor: [9, 9]
-});
+    // Stern-Icon für Posen, Warschau & Lemberg
+    const starIcon = L.divIcon({
+        pane: 'specialCitiesPane',
+        html: `<svg height="18" width="18" viewBox="0 0 24 24" style="display: block;">
+                 <polygon points="12,2 15,9 22,9 16,14 18,21 12,17 6,21 8,14 2,9 9,9" 
+                          fill="${markerColor}" stroke="#ffffff" stroke-width="1.5"/>
+               </svg>`,
+        className: '',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+    });
 
-// 3. Funktion zum Hinzufügen der Städte
-const specialCities = ["Posen", "Warschau", "Lemberg"];
+    function addCityToMap(name, lat, lng) {
+        const isSpecial = specialCities.includes(name);
 
-function addCityToMap(name, lat, lng) {
-    const isSpecial = specialCities.includes(name);
+        if (isSpecial) {
+            // Fokusstadt als Stern
+            const marker = L.marker([lat, lng], { 
+                icon: starIcon,
+                zIndexOffset: 1000 
+            });
 
-    if (isSpecial) {
-        // Fokusstadt als Stern
-        const marker = L.marker([lat, lng], { 
-            icon: starIcon,
-            zIndexOffset: 1000 
-        });
+            marker.bindTooltip(name, {
+                permanent: true,
+                direction: 'right',
+                offset: [10, 0],
+                className: 'city-label-special'
+            });
+            marker.addTo(map);
+        } else {
+            // Normale Stadt als Kreis
+            const marker = L.circleMarker([lat, lng], {
+                pane: 'citiesPane',
+                radius: 3.5,
+                fillColor: markerColor,
+                color: "#ffffff",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.9
+            });
 
-        marker.bindTooltip(name, {
-            permanent: true,
-            direction: 'right',
-            offset: [10, 0],
-            className: 'city-label-special'
-        });
-        marker.addTo(map);
-    } else {
-        // Normale Stadt als Kreis in derselben Farbe
-        const marker = L.circleMarker([lat, lng], {
-            pane: 'citiesPane',
-            radius: 3.5,
-            fillColor: markerColor,
-            color: "#ffffff",
-            weight: 1,
-            opacity: 1,
-            fillOpacity: 0.9
-        });
-
-        marker.bindTooltip(name, {
-            permanent: true,
-            direction: 'right',
-            offset: [6, 0],
-            className: 'city-label'
-        });
-        marker.addTo(map);
+            marker.bindTooltip(name, {
+                permanent: true,
+                direction: 'right',
+                offset: [6, 0],
+                className: 'city-label'
+            });
+            marker.addTo(map);
+        }
     }
-}
 
-    // 7. Robustes Laden von 'cities-geo' (GeoJSON & CSV Kompatibel)
+    // 7. Laden der Datei 'cities-geo'
     fetch('cities-geo')
         .then(response => response.text())
         .then(textData => {
@@ -228,9 +226,7 @@ function addCityToMap(name, lat, lng) {
                         }
                     });
                 }
-            } catch (e) {
-                // Keine GeoJSON-Struktur, fahre fort mit CSV
-            }
+            } catch (e) {}
 
             if (!parsedAsGeoJSON) {
                 Papa.parse(textData, {
@@ -242,7 +238,6 @@ function addCityToMap(name, lat, lng) {
                             let lat = null;
                             let lng = null;
 
-                            // Schau flexibel nach Spaltennamen (Toleriere Leerzeichen / Großschreibung)
                             Object.keys(row).forEach(key => {
                                 const cleanKey = key.trim().toLowerCase();
                                 if (cleanKey === 'name' || cleanKey === 'stadt') name = row[key].trim();
