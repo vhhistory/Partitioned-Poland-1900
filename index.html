@@ -150,7 +150,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // 1. Karte initialisieren
+  // 1. Karte initialisieren
     const map = L.map('map', {
         zoomSnap: 0.25,
         zoomDelta: 0.5,
@@ -162,8 +162,8 @@
     map.createPane('empiresPane');
     map.getPane('empiresPane').style.zIndex = 300;
 
-    map.createPane('bordersPane');
-    map.getPane('bordersPane').style.zIndex = 350;
+    map.createPane('subbordersPane');
+    map.getPane('subbordersPane').style.zIndex = 350;
 
     map.createPane('railwaysPane');
     map.getPane('railwaysPane').style.zIndex = 400;
@@ -177,300 +177,132 @@
     const railwayLayerGroup = L.layerGroup();
     const provinceLabelsGroup = L.layerGroup().addTo(map);
 
-    const overlayMaps = {
-        "🚂 Eisenbahnnetz (1900)": railwayLayerGroup
-    };
-    
-    L.control.layers(null, overlayMaps, { collapsed: false }).addTo(map);
+    L.control.layers(null, { "🚂 Eisenbahnnetz (1900)": railwayLayerGroup }, { collapsed: false }).addTo(map);
 
-    // Events zum Umschalten
-    map.on('overlayadd', function(e) {
-        if (e.layer === railwayLayerGroup) {
-            map.removeLayer(provinceLabelsGroup);
-            document.body.classList.add('railways-active');
-            toggleLabelBackgrounds(true);
-            updateEmpirePositions(true);
-        }
-    });
+    // Basemaps
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '&copy; CARTO' }).addTo(map);
+    L.tileLayer('https://tile.openhistoricalmap.org/mapnik/{z}/{x}/{y}.png?datetime=1900-01-01T00:00:00Z', { maxZoom: 18, minZoom: 3, opacity: 0.85, attribution: '&copy; OpenHistoricalMap' }).addTo(map);
 
-    map.on('overlayremove', function(e) {
-        if (e.layer === railwayLayerGroup) {
-            map.addLayer(provinceLabelsGroup);
-            document.body.classList.remove('railways-active');
-            toggleLabelBackgrounds(false);
-            updateEmpirePositions(false);
-        }
-    });
-
-    function toggleLabelBackgrounds(enable) {
-        const labels = document.querySelectorAll('.city-label, .city-label-special, .empire-label');
-        labels.forEach(label => {
-            if (enable) {
-                label.classList.add('active-railway-bg');
-            } else {
-                label.classList.remove('active-railway-bg');
-            }
-        });
-    }
-
-    // 3. Basemaps
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        attribution: '&copy; CARTO'
-    }).addTo(map);
-
-    L.tileLayer('https://tile.openhistoricalmap.org/mapnik/{z}/{x}/{y}.png?datetime=1900-01-01T00:00:00Z', {
-        maxZoom: 18,
-        minZoom: 3,
-        opacity: 0.85,
-        attribution: '&copy; OpenHistoricalMap'
-    }).addTo(map);
-
-    // 4. Hilfsfunktion Name
     function getLatinName(properties) {
         if (!properties) return "";
         let name = properties["name:de"] || properties["name:en"] || properties["name:latin"] || properties.NAME || properties.name || "";
-        
         if (/[\u0400-\u04FF]/.test(name)) {
             if (properties["name:de"]) name = properties["name:de"];
             else if (properties["name:en"]) name = properties["name:en"];
         }
-
         return name.replace(/Gouvernement|Guberniya|Губерния/gi, "Gouv.").trim();
     }
 
     document.addEventListener('DOMContentLoaded', function() {
 
-        // 5. Imperien & Provinzen laden
+        // 1. HAUPTIMPERIEN ZUERTST LADEN (Farbflächen)
         const fetchGermany   = fetch('Deutsches-Kaiserreich_1914.json').then(r => r.json());
         const fetchAustria   = fetch('Oesterreich-1908.json').then(r => r.json());
         const fetchRussia    = fetch('Russland_1914_perfekt.geojson').then(r => r.json());
-        const fetchEurope    = fetch('europa_1900.geojson').then(r => r.json());
 
-        // Provinzen
+        // Subregionen & Provinzen (Nur Binnengrenzen)
         const fetchBoehmen   = fetch('Boehmen.json').then(r => r.json());
         const fetchMaehren   = fetch('Maehren.json').then(r => r.json());
         const fetchSchlesien = fetch('Schlesien.json').then(r => r.json());
         const fetchUngarn    = fetch('Ungarn.json').then(r => r.json());
+        const fetchAdmin     = fetch('Admin-1900-geojson.geojson').then(r => r.json());
 
         Promise.all([
-            fetchGermany, fetchAustria, fetchRussia, fetchEurope,
-            fetchBoehmen, fetchMaehren, fetchSchlesien, fetchUngarn
+            fetchGermany, fetchAustria, fetchRussia,
+            fetchBoehmen, fetchMaehren, fetchSchlesien, fetchUngarn, fetchAdmin
         ])
-        .then(([germanyData, austriaData, russiaData, europeData, boehmenData, maehrenData, schlesienData, ungarnData]) => {
+        .then(([germanyData, austriaData, russiaData, boehmenData, maehrenData, schlesienData, ungarnData, adminData]) => {
 
-            // Gesamtreiche
+            // A. Die 3 Großreiche mit eigener Farbfüllung
             L.geoJSON(germanyData, {
                 pane: 'empiresPane',
-                style: { fill: true, fillColor: '#1e2b37', fillOpacity: 0.15, stroke: true, color: '#1e2b37', weight: 2.5, opacity: 0.85 }
+                style: { fill: true, fillColor: '#1e2b37', fillOpacity: 0.18, stroke: true, color: '#1e2b37', weight: 2 }
             }).addTo(map);
 
             L.geoJSON(austriaData, {
                 pane: 'empiresPane',
-                style: { fill: true, fillColor: '#b9770e', fillOpacity: 0.15, stroke: true, color: '#b9770e', weight: 2.5, opacity: 0.85 }
+                style: { fill: true, fillColor: '#b9770e', fillOpacity: 0.18, stroke: true, color: '#b9770e', weight: 2 }
             }).addTo(map);
 
             L.geoJSON(russiaData, {
                 pane: 'empiresPane',
-                style: { fill: true, fillColor: '#922b21', fillOpacity: 0.15, stroke: true, color: '#922b21', weight: 2.5, opacity: 0.85 }
+                style: { fill: true, fillColor: '#922b21', fillOpacity: 0.18, stroke: true, color: '#922b21', weight: 2 }
             }).addTo(map);
 
-            // Einheitlicher Stil für Provinzen
-            const standardProvinceStyle = {
-                fill: true,
-                fillColor: '#34495e',
-                fillOpacity: 0.15,
+            // B. Stil für interne Verwaltungsgrenzen (OHNE Farbfüllung, nur gestrichelt)
+            const subBorderStyle = {
+                fill: false,
                 stroke: true,
-                color: '#34495e',
-                weight: 1.5,
-                opacity: 0.85
+                color: '#4a5568',
+                weight: 1.2,
+                opacity: 0.6,
+                dashArray: '3, 4'
             };
 
-            // Böhmen, Mähren, Schlesien und Ungarn wie andere Provinzen
-            L.geoJSON(boehmenData,   { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
-            L.geoJSON(maehrenData,   { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
-            L.geoJSON(schlesienData, { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
-            L.geoJSON(ungarnData,    { pane: 'empiresPane', style: standardProvinceStyle }).addTo(map);
+            // Österreicher Kronländer als gestrichelte Untergrenzen
+            L.geoJSON(boehmenData,   { pane: 'subbordersPane', style: subBorderStyle }).addTo(map);
+            L.geoJSON(maehrenData,   { pane: 'subbordersPane', style: subBorderStyle }).addTo(map);
+            L.geoJSON(schlesienData, { pane: 'subbordersPane', style: subBorderStyle }).addTo(map);
+            L.geoJSON(ungarnData,    { pane: 'subbordersPane', style: subBorderStyle }).addTo(map);
 
-            // Hauptkarte Europa 1900
-            L.geoJSON(europeData, {
-                pane: 'empiresPane',
-                filter: function(feature) {
-                    const p = feature.properties || {};
-                    const rawName = JSON.stringify(p).toLowerCase();
-
-                    // Hauptreich-Shapes filtern, Provinzen durchlassen
-                    const isMainGermany = rawName.includes("deutsches kaiserreich") || rawName.includes("german empire");
-                    const isMainAustria = rawName.includes("österreich-ungarn") || rawName.includes("austro-hungarian");
-                    const isMainRussia  = rawName.includes("russisches kaiserreich") || rawName.includes("russian empire");
-
-                    return !isMainGermany && !isMainAustria && !isMainRussia;
-                },
+            // C. Verwaltungsebenen / Gouvernements laden & verarbeiten
+            L.geoJSON(adminData, {
+                pane: 'subbordersPane',
+                style: subBorderStyle,
                 onEachFeature: function(feature, layer) {
-                    const p = feature.properties || {};
-                    const rawName = JSON.stringify(p).toLowerCase();
+                    const name = getLatinName(feature.properties);
+                    const rawProps = JSON.stringify(feature.properties || {}).toLowerCase();
+                    
+                    // Prüfen ob es ein polnisches Gouvernement ist
+                    const isPolishGov = rawProps.includes("suwalki") || rawProps.includes("warschau") || 
+                                        rawProps.includes("kalisch") || rawProps.includes("kielce") || 
+                                        rawProps.includes("lublin") || rawProps.includes("lomza") || 
+                                        rawProps.includes("radom") || rawProps.includes("siedlce") || 
+                                        rawProps.includes("piotrkow") || rawProps.includes("plock");
 
-                    const isPolishGov = rawName.includes("suwalki") || rawName.includes("suwałki") || 
-                                        rawName.includes("gouvernement") || rawName.includes("gov") ||
-                                        rawName.includes("warschau") || rawName.includes("kalisch") ||
-                                        rawName.includes("kielce") || rawName.includes("lublin") ||
-                                        rawName.includes("lomza") || rawName.includes("radom") ||
-                                        rawName.includes("siedlce") || rawName.includes("piotrkow");
-
-                    if (layer.getTooltip()) {
-                        layer.unbindTooltip();
-                    }
-
-                    if (isPolishGov) {
-                        feature.properties.name = "Königreich Polen";
-                        feature.properties.NAME = "Königreich Polen";
-                        
-                        layer.bindTooltip("Königreich Polen", {
-                            permanent: false,
-                            direction: 'center',
-                            className: 'region-label-poland'
-                        });
-                    } else {
-                        for (let key in feature.properties) {
-                            if (typeof feature.properties[key] === 'string') {
-                                feature.properties[key] = feature.properties[key].replace(/\b(18|19|20)\d{2}\b/g, '').trim();
-                            }
+                    // Namen für einzelne russische Gouvernements unterdrücken
+                    if (!isPolishGov && name) {
+                        if (layer.getBounds) {
+                            const labelMarker = L.marker(layer.getBounds().getCenter(), {
+                                pane: 'specialCitiesPane',
+                                icon: L.divIcon({
+                                    className: 'region-label-auto',
+                                    html: name,
+                                    iconSize: [180, 20],
+                                    iconAnchor: [90, 10]
+                                }),
+                                interactive: false
+                            });
+                            provinceLabelsGroup.addLayer(labelMarker);
                         }
                     }
-                },
-                style: standardProvinceStyle
+                }
             }).addTo(map);
 
+            // D. Zentrales Label für "Königreich Polen" platzieren
+            const polandLabelMarker = L.marker([52.1, 20.8], {
+                pane: 'specialCitiesPane',
+                icon: L.divIcon({
+                    className: 'region-label-poland',
+                    html: 'Königreich Polen',
+                    iconSize: [200, 25],
+                    iconAnchor: [100, 12]
+                }),
+                interactive: false
+            });
+            provinceLabelsGroup.addLayer(polandLabelMarker);
         })
-        .catch(err => console.error("Fehler beim Laden der Kartendaten:", err));
+        .catch(err => console.error("Fehler beim Laden der GeoJSON-Dateien:", err));
 
-        // 6. Admin
-        fetch('Admin-1900-geojson.geojson')
-            .then(res => res.json())
-            .then(data => {
-                L.geoJSON(data, {
-                    pane: 'bordersPane',
-                    filter: function(feature) {
-                        const name = getLatinName(feature.properties).toLowerCase();
-                        const rawProps = JSON.stringify(feature.properties || {}).toLowerCase();
-                        
-                        const isWolhynien = name.includes("wolhynien") || name.includes("volhyn") || rawProps.includes("wolhynien") || rawProps.includes("volhyn");
-                        const isPodolien = name.includes("podol") || rawProps.includes("podol");
-                        
-                        const isSuwalki = name.includes("suwalki") || name.includes("suwałki") || name.includes("suvalki") || rawProps.includes("suwalki");
-                        const isKowno = name.includes("kowno") || name.includes("kovno") || name.includes("kaunas") || rawProps.includes("kovno") || rawProps.includes("kowno");
-                        const isKurland = name.includes("kurland") || name.includes("courland") || name.includes("kurzemes") || rawProps.includes("kurland") || rawProps.includes("courland");
-
-                        return !isWolhynien && !isPodolien && !isSuwalki && !isKowno && !isKurland;
-                    },
-                    style: {
-                        fill: false,
-                        color: '#4a5568',
-                        weight: 0.9,
-                        opacity: 0.45,
-                        dashArray: '3, 3'
-                    },
-                    onEachFeature: function(feature, layer) {
-                        const name = getLatinName(feature.properties);
-                        const lowerName = name.toLowerCase();
-                        
-                        if (name && !lowerName.includes("galizien") && !lowerName.includes("galicia")) {
-                            layer.bindPopup("<b>" + name + "</b>");
-
-                            if (layer.getBounds) {
-                                const labelMarker = L.marker(layer.getBounds().getCenter(), {
-                                    pane: 'specialCitiesPane',
-                                    icon: L.divIcon({
-                                        className: 'region-label-auto',
-                                        html: name,
-                                        iconSize: [180, 20],
-                                        iconAnchor: [90, 10]
-                                    }),
-                                    interactive: false
-                                });
-                                provinceLabelsGroup.addLayer(labelMarker);
-                            }
-                        }
-                    }
-                }).addTo(map);
-
-                // Radom & Galizien manuell hinzufügen
-                const radomMarker = L.marker([51.402, 21.147], {
-                    pane: 'specialCitiesPane',
-                    icon: L.divIcon({
-                        className: 'region-label-auto',
-                        html: 'Gouv. Radom',
-                        iconSize: [180, 20],
-                        iconAnchor: [90, 10]
-                    }),
-                    interactive: false
-                });
-                provinceLabelsGroup.addLayer(radomMarker);
-
-                const galizienMarker = L.marker([49.95, 24.03], {
-                    pane: 'specialCitiesPane',
-                    icon: L.divIcon({
-                        className: 'region-label-auto',
-                        html: 'Königreich Galizien und Lodomerien',
-                        iconSize: [260, 20],
-                        iconAnchor: [130, 20]
-                    }),
-                    interactive: false
-                });
-                provinceLabelsGroup.addLayer(galizienMarker);
-            })
-            .catch(err => console.error("Fehler bei Admin-1900-geojson.geojson:", err));
-
-        // 6b. Eisenbahnlinien
-        fetch('Eisenbahn-Linien.geojson')
-            .then(res => {
-                if (!res.ok) throw new Error("HTTP Fehler " + res.status);
-                return res.json();
-            })
-            .then(data => {
-                let swapCoords = false;
-                try {
-                    let sampleCoords = data.features[0].geometry.coordinates;
-                    while (Array.isArray(sampleCoords[0])) { sampleCoords = sampleCoords[0]; }
-                    if (sampleCoords[0] > 35 && sampleCoords[0] < 70) {
-                        swapCoords = true;
-                    }
-                } catch(e) {}
-
-                const baseRailLayer = L.geoJSON(data, {
-                    pane: 'railwaysPane',
-                    coordsToLatLng: coords => swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]),
-                    style: { color: '#1a1a1a', weight: 2.2, opacity: 0.6 }
-                });
-
-                const dashRailLayer = L.geoJSON(data, {
-                    pane: 'railwaysPane',
-                    coordsToLatLng: coords => swapCoords ? new L.LatLng(coords[0], coords[1]) : new L.LatLng(coords[1], coords[0]),
-                    style: { color: '#ffffff', weight: 1.0, opacity: 0.65, dashArray: '3, 4' },
-                    onEachFeature: function(feature, layer) {
-                        if (feature.properties) {
-                            const lineName = feature.properties.name || feature.properties.ref || "Eisenbahnstrecke";
-                            layer.bindPopup("<b>Eisenbahnlinie:</b> " + lineName);
-                        }
-                    }
-                });
-
-                railwayLayerGroup.addLayer(baseRailLayer);
-                railwayLayerGroup.addLayer(dashRailLayer);
-            })
-            .catch(err => console.error("Fehler beim Laden von Eisenbahn-Linien.geojson:", err));
-
-        // 7. Imperien-Labels
+        // Imperien-Beschriftung
         const empireData = [
-            { name: "Deutsches Kaiserreich", defaultCoords: [51.7, 15.8], railCoords: [51.7, 15.3] },
-            { name: "Russländisches Reich", defaultCoords: [51.7, 23.0], railCoords: [51.7, 24.2] },
-            { name: "Österreich-Ungarn", defaultCoords: [49.5, 19.9], railCoords: [49.5, 19.9] }
+            { name: "Deutsches Kaiserreich", defaultCoords: [51.7, 15.8] },
+            { name: "Russländisches Reich", defaultCoords: [51.7, 24.2] },
+            { name: "Österreich-Ungarn", defaultCoords: [48.8, 19.5] }
         ];
 
-        const empireMarkers = [];
-
         empireData.forEach(emp => {
-            const marker = L.marker(emp.defaultCoords, {
+            L.marker(emp.defaultCoords, {
                 pane: 'specialCitiesPane',
                 icon: L.divIcon({
                     className: 'empire-label',
@@ -480,10 +312,8 @@
                 }),
                 interactive: false
             }).addTo(map);
-            
-            empireMarkers.push({ marker, data: emp });
         });
-
+    });
         function updateEmpirePositions(isRailwayActive) {
             empireMarkers.forEach(item => {
                 const newCoords = isRailwayActive ? item.data.railCoords : item.data.defaultCoords;
