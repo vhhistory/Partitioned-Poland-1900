@@ -85,13 +85,27 @@
         }
 
         /* Dynamischer weißer halbtransparenter Hintergrund (wird bei aktivierten Eisenbahnen zugeschaltet) */
-        .active-railway-bg {
-            background-color: rgba(255, 255, 255, 0.75) !important;
-            padding: 2px 5px !important;
-            border-radius: 3px !important;
-            box-shadow: 0 0 4px rgba(255, 255, 255, 0.8) !important;
+       /* Starker weißer Text-Halo bei aktiviertem Eisenbahn-Netz */
+        .city-label.active-railway-bg {
+            text-shadow: 
+                0 0 4px #ffffff, 0 0 4px #ffffff,
+                1px 1px 2px #ffffff, -1px -1px 2px #ffffff,
+                1px -1px 2px #ffffff, -1px 1px 2px #ffffff !important;
         }
 
+        .city-label-special.active-railway-bg {
+            text-shadow: 
+                0 0 6px #ffffff, 0 0 6px #ffffff,
+                2px 2px 3px #ffffff, -2px -2px 3px #ffffff,
+                2px -2px 3px #ffffff, -2px 2px 3px #ffffff !important;
+        }
+
+        .empire-label.active-railway-bg {
+            text-shadow: 
+                0 0 8px #ffffff, 0 0 8px #ffffff,
+                2px 2px 4px #ffffff, -2px -2px 4px #ffffff,
+                2px -2px 4px #ffffff, -2px 2px 4px #ffffff !important;
+        }
         /* Regionalbeschriftungen (Provinzen & Gouvernements) */
         .region-label-auto {
             font-size: 10.5px;
@@ -176,7 +190,7 @@
         }
     });
 
-    // Hilfsfunktion zum Ein-/Ausschalten der weißen Text-Hintergründe
+    // Hilfsfunktion zum Ein-/Ausschalten der verstärkten Kontur
     function toggleLabelBackgrounds(enable) {
         const labels = document.querySelectorAll('.city-label, .city-label-special, .empire-label');
         labels.forEach(label => {
