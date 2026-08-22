@@ -1,1 +1,24 @@
 # Partitioned-Poland-1900
+
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+[![License: MIT](https://img.shields.io/badge/Code_License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
+## Über das Projekt
+
+Dieses Repository enthält den Workflow und die Skripte zur Extraktion, Aufbereitung und Georeferenzierung historischer Ortsdaten.
+
+---
+
+## Methodik & Data Provenance
+
+Die Datenverarbeitung gliedert sich in folgende Schritte:
+
+1. **Historische Georeferenzierung:**
+   - Manuelle und automatisierte Recherche historischer Ortsbezeichnungen und Toponyme.
+   - Zuordnung von Geokoordinaten (Breiten- und Längengrade).
+2. **GIS-Verarbeitung & Harmonisierung (R):**
+   - Extraktion historischer Grenzverläufe aus dem R-Package [`cshapes`](https://cran.r-project.org/package=cshapes).
+   - Abfrage und Import ergänzender historischer Shapefiles/Vektordaten aus **OpenHistoricalMap (OHM)** via **Overpass API** (Overpass Turbo).
+   - Abgleich und Angleichung der Kartendaten an die Vektordaten von **HistoGIS** (*Austrian Centre for Digital Humanities and Cultural Heritage /         ÖAW*).
+3. **Interaktive Visualisierung (Leaflet):** Aufbereitung der harmonisierten Geodaten für eine interaktive Kartendarstellung im Web mittels des R-Pakets `leaflet` (bzw. JavaScript Leaflet.js).
+4. **Code-Generierung & AI Transparency:** Der Code für die Datenverarbeitung in R sowie die Erstellung der Leaflet-Karte wurde unter Einsatz von KI-Assistenz generiert, angepasst und validiert.
